@@ -7,4 +7,4 @@
 	<meta name="keywords" content="home, magic link, demo app" />
 </svelte:head>
 
-<h1 class="text-2xl font-bold underline">Hello world!</h1>
+<h1 class="text-2xl font-bold underline">Public Home</h1>

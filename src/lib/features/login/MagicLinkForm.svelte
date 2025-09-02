@@ -21,7 +21,6 @@
 	 * Real-time email validation on input change
 	 */
 	function handleEmailInput() {
-		console.log('Email validation triggered');
 		if (isSubmitted) {
 			const validation = validateField(email, /^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'email');
 			errors = { ...errors, email: validation.error };
@@ -43,8 +42,6 @@
 				emailRedirectTo: 'http://localhost:5173/'
 			}
 		});
-
-		console.log('Magic link error:', error);
 
 		if (error) {
 			return { success: error.message ? false : true, message: error.message };
@@ -73,8 +70,6 @@
 			isLoading = true;
 
 			const response = await sendMagicLink(email);
-
-			console.log('Magic link response:', response)
 
 			if (response.success) {
 				showSuccess = true;
