@@ -34,12 +34,11 @@
 	async function sendMagicLink(
 		emailAddress: string
 	): Promise<{ success: boolean; message?: string }> {
-		// Simulate API delay
+
 		const { error } = await supabase.auth.signInWithOtp({
 			email: emailAddress,
 			options: {
-				// Optional: Customize email template
-				emailRedirectTo: 'http://localhost:5173/'
+				emailRedirectTo: '/(auth)/confirm'
 			}
 		});
 
