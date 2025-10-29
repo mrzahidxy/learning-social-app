@@ -3,8 +3,9 @@ import authorsData from '$lib/data/authors.json';
 import type { Article, RawArticleData } from '$lib/types/article';
 import type { Author, RawAuthorData } from '$lib/types/author';
 import { error } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 
-export const load = async ({ params }) => {
+export const load: PageServerLoad = async ({ params }) => {
   const { id } = params;
 
   // Convert raw data to typed data
