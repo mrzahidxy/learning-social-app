@@ -35,10 +35,12 @@ model Article {
   title        String
   content      String
   imageUrl     String?
+  published    Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   @@schema("public")
   @@index([authorUserId])
+  @@index([published])
 }
 
 model Notification {
