@@ -35,3 +35,18 @@ export type RawArticleData = {
   keyTakeaways: string[];
   recommendedTools: string[];
 };
+
+export type ArticleAuthor = {
+  userId: string;
+  displayName: string | null;
+} | null;
+
+export type AdminArticle = {
+  id: string;
+  title: string;
+  published: boolean;
+  authorUserId: string;
+  createdAt: string;
+  updatedAt: string;
+  author: ArticleAuthor;
+};
