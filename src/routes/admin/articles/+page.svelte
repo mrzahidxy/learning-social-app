@@ -4,7 +4,7 @@
 	import type { AdminArticle } from '$lib/types/article';
 	import { formatDateTime } from '$lib/utils/date';
 
-	const { data } = $props<{
+	const props = $props<{
 		data: {
 			articles: AdminArticle[];
 			pagination: { page: number; pageSize: number; total: number };
@@ -14,9 +14,11 @@
 
 	const statuses = STATUS_OPTIONS;
 
-	let articles = $state(structuredClone(data.articles));
-	let searchTerm = $state(data.filters.search ?? '');
-	let statusFilter = $state((data.filters.status as 'all' | 'published' | 'draft') ?? 'all');
+	const data = $derived(props.data);
+
+	let articles = $state([] as AdminArticle[]);
+	let searchTerm = $state('');
+	let statusFilter = $state<'all' | 'published' | 'draft'>('all');
 
 	const pending = $state(new Set<string>());
 	const errorMap = $state(new Map<string, string>());
