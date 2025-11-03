@@ -32,6 +32,7 @@ async function main() {
       authorUserId: authorId,
       title: 'Hello World',
       content: 'This is the first article.',
+      published: true,
     },
   })
 
