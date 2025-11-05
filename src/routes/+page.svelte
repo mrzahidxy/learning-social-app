@@ -1,12 +1,17 @@
 <script lang="ts">
-	import articlesData from '$lib/data/articles.json';
-	import authorsData from '$lib/data/authors.json';
+	import { goto } from '$app/navigation';
 	import ArticleCard from '$lib/components/articles/ArticleCard.svelte';
 	import ArticleFilters from '$lib/components/articles/ArticleFilters.svelte';
-	import type { Article, RawArticleData } from '$lib/types/article';
-	import type { Author, RawAuthorData } from '$lib/types/author';
+	import NextIcon from '$lib/icons/NextIcon.svelte';
+	import PreviousIcon from '$lib/icons/PreviousIcon.svelte';
+	import type { Article } from '$lib/types/article';
+	import type { Author } from '$lib/types/author';
 
-	type ArticleWithAuthor = Article & { author: Author };
+	type ArticleWithAuthor = Article & { author: Author | null };
+
+	const props = $props();
+	const data = $derived(props.data);
+	const articles = $derived(data?.articles as ArticleWithAuthor[]);
 
 	const fallbackAuthor: Author = {
 		userId: 'unknown',
@@ -15,114 +20,82 @@
 		bio: 'Author details coming soon.',
 		profileImage: null,
 		createdAt: new Date(),
-		updatedAt: new Date(),
-		articleCount: 0,
-		subscriberCount: 0
+		updatedAt: new Date()
 	};
 
 	let searchTerm = $state('');
-	let sortOption = $state('latest');
+	let sortOption = $state<'latest' | 'default'>('latest');
 	let currentPage = $state(1);
-	const ITEMS_PER_PAGE = 6;
 	let showError = $state(false);
 	let isLoading = $state(false);
 
-	const sortArticles = (entries: ArticleWithAuthor[]) => {
-		const sorted = [...entries];
+	$effect(() => {
+		currentPage = data?.pagination?.page ?? 1;
+		searchTerm = data?.filters?.search ?? '';
+		sortOption = (data?.filters?.sort ?? 'latest') as 'latest' | 'default';
+	});
 
-		switch (sortOption) {
-			case 'popular':
-				return sorted.sort((a, b) => b.views - a.views);
-			case 'latest':
-			default:
-				return sorted.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
+	const pagination = $derived(
+		() =>
+			data?.pagination ?? {
+				page: 1,
+				pageSize: articles.length,
+				totalItems: articles.length,
+				totalPages: articles.length ? 1 : 0,
+				hasNext: false,
+				hasPrev: false
+			}
+	);
+
+	const navigateWithFilters = (overrides: { page?: number } = {}) => {
+		const params = new URLSearchParams();
+		const trimmed = searchTerm.trim();
+		const targetPage = overrides.page ?? pagination().page;
+
+		if (trimmed) {
+			params.set('q', trimmed);
+		}
+
+		if (sortOption !== 'latest') {
+			params.set('sort', sortOption);
+		}
+
+		if (targetPage > 1) {
+			params.set('page', String(targetPage));
+		}
+
+		goto(params.size ? `?${params.toString()}` : '/', { replaceState: true });
+	};
+
+	const handleFiltersSubmit = (e: Event) => {
+		e?.preventDefault();
+		currentPage = 1;
+		navigateWithFilters({ page: 1 });
+	};
+
+	const goToPrev = () => {
+		if (pagination().hasPrev) {
+			navigateWithFilters({ page: pagination().page - 1 });
 		}
 	};
 
-	const filteredArticles = $derived(() => {
-		// Create the dataset by combining articles with their authors
-		const articles: Article[] = (articlesData as RawArticleData[]).map((item) => ({
-			id: item.id,
-			title: item.title,
-			subtitle: item.subtitle,
-			excerpt: item.excerpt,
-			summary: item.summary,
-			coverImage: item.coverImage,
-			tags: item.tags,
-			publishedAt: new Date(item.publishedAt),
-			updatedAt: new Date(item.updatedAt),
-			readingTime: item.readingTime,
-			views: item.views,
-			likes: item.likes,
-			authorId: item.authorId,
-			content: item.content,
-			keyTakeaways: item.keyTakeaways,
-			recommendedTools: item.recommendedTools
-		}));
-
-		const authors: Author[] = (authorsData as RawAuthorData[]).map((author) => ({
-			userId: author.userId,
-			role: (author.role as Author['role']) ?? 'AUTHOR',
-			displayName: author.displayName,
-			bio: author.bio,
-			profileImage: author.profileImage,
-			createdAt: new Date(author.createdAt),
-			updatedAt: new Date(author.updatedAt),
-			articleCount: author.articleCount,
-			subscriberCount: author.subscriberCount
-		}));
-
-		const dataset: ArticleWithAuthor[] = articles.map((article) => ({
-			...article,
-			author: authors.find((author) => author.userId === article.authorId) ?? fallbackAuthor
-		}));
-
-		let result = [...dataset];
-
-		// Apply search filter
-		const term = searchTerm?.trim().toLowerCase();
-		const filtered = term
-			? result.filter(
-					(article) =>
-						article.title.toLowerCase().includes(term) ||
-						article.summary.toLowerCase().includes(term) ||
-						article.author.displayName?.toLowerCase().includes(term)
-				)
-			: result;
-
-		// Apply sorting
-		return sortArticles(filtered);
-	});
-
-	const displayedArticles = $derived(() => {
-		const start = (currentPage - 1) * ITEMS_PER_PAGE;
-		const end = start + ITEMS_PER_PAGE;
-		return filteredArticles().slice(start, end);
-	});
-
-	const hasMore = $derived(() => {
-		return currentPage * ITEMS_PER_PAGE < filteredArticles().length;
-	});
-
-	const loadMore = () => {
-		if (hasMore()) {
-			currentPage += 1;
+	const goToNext = () => {
+		if (pagination().hasNext) {
+			navigateWithFilters({ page: pagination().page + 1 });
 		}
 	};
 
 	const resultSummary = () => {
-		const total = filteredArticles().length;
-		const start = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-		const end = Math.min(currentPage * ITEMS_PER_PAGE, total);
+		const info = pagination();
 
-		if (total === 0) {
+		if (!info.totalItems) {
 			return 'No articles found';
 		}
 
-		return `Showing ${start}-${end} of ${total} articles`;
+		const start = (info.page - 1) * info.pageSize + 1;
+		const end = Math.min(info.page * info.pageSize, info.totalItems);
+		return `Showing ${start}-${end} of ${info.totalItems} articles`;
 	};
-
-	$inspect(searchTerm);
 </script>
 
 <svelte:head>
@@ -148,7 +121,19 @@
 		</div>
 
 		<div class="w-full">
-			<ArticleFilters bind:searchTerm bind:sortOption bind:currentPage />
+			<form class="flex-colrow flex gap-4" onsubmit={handleFiltersSubmit}>
+				<div class="flex-1">
+					<ArticleFilters bind:searchTerm bind:sortOption bind:currentPage />
+				</div>
+				<div class="pb-1">
+					<button
+						type="submit"
+						class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+					>
+						Apply
+					</button>
+				</div>
+			</form>
 		</div>
 	</header>
 
@@ -182,7 +167,7 @@
 				</article>
 			{/each}
 		</div>
-	{:else if !showError && displayedArticles().length === 0}
+	{:else if !showError && articles.length === 0}
 		<div
 			class="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center shadow-sm"
 		>
@@ -203,19 +188,38 @@
 		</div>
 	{:else}
 		<div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite" aria-busy={isLoading}>
-			{#each displayedArticles() as entry (entry.id)}
-				<ArticleCard article={entry} author={entry.author} />
+			{#each articles as entry (entry.id)}
+				<ArticleCard article={entry} author={entry.author ?? fallbackAuthor} />
 			{/each}
 		</div>
 	{/if}
 
-	{#if hasMore() && !isLoading && displayedArticles().length > 0}
-		<div class="flex justify-center">
+	{#if !isLoading && pagination().totalPages > 1}
+		<div class="flex items-center justify-center gap-2">
 			<button
-				onclick={loadMore}
-				class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+				type="button"
+				onclick={goToPrev}
+				class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:z-20 disabled:cursor-not-allowed disabled:opacity-50"
+				disabled={!pagination().hasPrev}
+				aria-label="Previous page"
 			>
-				Load More
+				<PreviousIcon size={16} />
+			</button>
+
+			<div class="flex items-center">
+				<span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700">
+					Page {pagination().page} of {pagination().totalPages}
+				</span>
+			</div>
+
+			<button
+				type="button"
+				onclick={goToNext}
+				class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:z-20 disabled:cursor-not-allowed disabled:opacity-50"
+				disabled={!pagination().hasNext}
+				aria-label="Next page"
+			>
+				<NextIcon size={16} />
 			</button>
 		</div>
 	{/if}

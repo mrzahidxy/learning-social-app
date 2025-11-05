@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SearchIcon from '$lib/icons/SearchIcon.svelte';
+
 	let {
 		searchTerm = $bindable(''),
 		sortOption = $bindable('latest'),
@@ -14,20 +16,7 @@
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-center">
 		<div class="relative flex-1">
 			<span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-				<svg
-					aria-hidden="true"
-					class="h-4 w-4"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.5"
-					viewBox="0 0 24 24"
-				>
-					<path
-						d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
+				<SearchIcon />
 			</span>
 			<input
 				id="article-search"
@@ -48,7 +37,7 @@
 				onchange={resetPage}
 			>
 				<option value="latest">Newest</option>
-				<option value="popular">Most Views</option>
+				<option value="default">Default</option>
 			</select>
 		</div>
 	</div>
