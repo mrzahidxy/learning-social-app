@@ -6,6 +6,7 @@
 	import ArticleCard from '$lib/components/articles/ArticleCard.svelte';
 	import ShareIcon from '$lib/icons/ShareIcon.svelte';
 	import PageWrapper from '$lib/components/PageWrapper.svelte';
+	import { browser } from '$app/environment';
 
 	let { data } = $props();
 
@@ -47,8 +48,32 @@
 		console.log('Saves article:', data?.article?.id);
 	};
 
+	const articleLink = $derived(`/articles/${data?.article?.id ?? ''}`);
+	const shareSupported = $derived(browser && typeof navigator.share === 'function');
+
+	const buildShareUrl = () => {
+		if (!browser) return articleLink;
+		return new URL(articleLink, window.location.origin).toString();
+	};
+
 	const handleShare = async () => {
-		console.log('Share article:', data?.article?.id);
+		const url = buildShareUrl();
+
+		if (shareSupported) {
+			try {
+				await navigator.share({
+					title: data?.article.title,
+					text: data?.article?.content ? data.article.content.substring(0, 160) + '...' : '',
+					url
+				});
+				return;
+			} catch (error) {
+				// Ignore user aborts and continue to copy fallback
+				if ((error as DOMException).name !== 'AbortError') {
+					console.error('Share failed, falling back to copy', error);
+				}
+			}
+		}
 	};
 </script>
 
@@ -68,16 +93,16 @@
 			</h1>
 
 			<div class="flex flex-wrap items-center justify-between gap-3">
-				{#if data?.article?.author}
+				{#if data?.author}
 					<a
-						href={'/authors/' + data.article?.author.userId}
+						href={'/authors/' + data?.author.userId}
 						class="flex items-center gap-3 font-medium text-gray-900 hover:text-blue-600"
 					>
 						<img
 							class="h-10 w-10 rounded-full object-cover"
-							src={data.article?.author.profileImage || fallbackAuthorImage}
+							src={data?.author.profileImage || fallbackAuthorImage}
 							onerror={handleAuthorImageError}
-							alt={data.article?.author.displayName}
+							alt={data?.author.displayName}
 							width="40"
 							height="40"
 						/>
@@ -99,7 +124,7 @@
 						<SaveIcon />
 					</button>
 					<button
-						class="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-500"
+						class="flex cursor-pointer items-center gap-1 text-sm text-gray-500 hover:text-blue-500"
 						aria-label="Share this article"
 						onclick={handleShare}
 					>
@@ -127,18 +152,18 @@
 
 		<footer class="mt-8 border-t border-gray-200 pt-6">
 			<div class="flex flex-wrap items-center justify-between gap-3">
-				{#if data?.article?.author}
+				{#if data?.author}
 					<div class="flex items-center gap-3">
 						<img
 							class="h-12 w-12 rounded-full object-cover"
-							src={data.article?.author.profileImage || fallbackAuthorImage}
+							src={data?.author.profileImage || fallbackAuthorImage}
 							onerror={handleAuthorImageError}
-							alt={data.article?.author.displayName}
+							alt={data?.author.displayName}
 							width="48"
 							height="48"
 						/>
 						<div>
-							<p class="font-medium text-gray-900">{data.article?.author.displayName}</p>
+							<p class="font-medium text-gray-900">{data?.author.displayName}</p>
 							<p class="text-sm text-gray-500">0 articles · 0 subscribers</p>
 						</div>
 					</div>
