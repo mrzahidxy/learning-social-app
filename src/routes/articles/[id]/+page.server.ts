@@ -5,7 +5,7 @@ import prisma from '$lib/server/prisma';
 export const load: PageServerLoad = async ({ params }) => {
 	const { id } = params;
 
-	const article = await prisma.article.findUnique({
+	const article = await prisma.article.findFirst({
 		where: {
 			id: id,
 			published: true

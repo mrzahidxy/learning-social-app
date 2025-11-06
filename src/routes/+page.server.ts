@@ -36,6 +36,7 @@ export const load: PageServerLoad = async ({ url }) => {
 			authorUserId: true,
 			createdAt: true,
 			updatedAt: true,
+			imageUrl: true,
 			author: {
 				select: {
 					userId: true,
