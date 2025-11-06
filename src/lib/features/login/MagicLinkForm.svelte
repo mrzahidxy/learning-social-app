@@ -6,7 +6,6 @@
 	import { validateField } from '$lib/utils/validate';
 	import { createClient } from '@supabase/supabase-js';
 	import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
-	import MailIcon from '$lib/icons/MailIcon.svelte';
 	import SendIcon from '$lib/icons/SendIcon.svelte';
 
 	const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
