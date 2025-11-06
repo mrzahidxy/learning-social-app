@@ -1,32 +1,21 @@
 <script lang="ts">
 	import ArticleCard from '$lib/components/articles/ArticleCard.svelte';
+	import BookIcon from '$lib/icons/BookIcon.svelte';
+	import FollowerIcon from '$lib/icons/FollowerIcon.svelte';
+	import { formatLongDate } from '$lib/utils/common.js';
 
-	// Define the page data type
-	type PageData = {
-		author: import('$lib/types/author').Author;
-		articles: import('$lib/types/article').Article[];
-	};
-
-	// Get data from the page data
 	let { data } = $props();
 
-	// State for image sources
-	let authorImageSrc: string = $state(data?.author?.profileImage || '/images/placeholder-avatar.svg')
+	let authorImageSrc: string = $state(
+		data?.author?.profileImage || '/images/placeholder-avatar.svg'
+	);
 
-	// Handle author image error
 	function handleAuthorImageError() {
 		authorImageSrc = '/images/placeholder-avatar.svg';
 	}
 
 	// Format the join date
-	const formattedDate = $derived(() => {
-		if (!data.author.createdAt) return '';
-		return new Date(data.author.createdAt).toLocaleDateString('en-US', {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric'
-		});
-	});
+	const formattedDate = $derived(formatLongDate(data.author.createdAt));
 </script>
 
 <svelte:head>
@@ -50,38 +39,17 @@
 					{data.author.displayName}
 				</h1>
 				<p class="mt-2 text-gray-600">
-					Member since {formattedDate()}
+					Member since {formattedDate}
 				</p>
 				<div class="mt-4 flex flex-wrap justify-center gap-4 sm:justify-start">
-					<div class="flex items-center text-sm text-gray-500">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="mr-1 h-4 w-4"
-							viewBox="0 0 20 20"
-							fill="currentColor"
-						>
-							<path
-								d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"
-							/>
-						</svg>
+					<div class="flex items-center gap-1 text-sm text-gray-500">
+						<BookIcon size={16} />
 						{data.articles.length}
 						{data.articles.length === 1 ? 'article' : 'articles'}
 					</div>
-					<div class="flex items-center text-sm text-gray-500">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="mr-1 h-4 w-4"
-							viewBox="0 0 20 20"
-							fill="currentColor"
-						>
-							<path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-							<path
-								fill-rule="evenodd"
-								d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-						{data.author.subscriberCount} followers
+					<div class="flex items-center gap-1 text-sm text-gray-500">
+						<FollowerIcon size={16} />
+						222
 					</div>
 				</div>
 			</div>

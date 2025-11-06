@@ -42,7 +42,7 @@
     <div class="flex h-16 justify-between">
       <div class="flex items-center">
         <a href="/" class="flex-shrink-0 text-xl font-bold text-blue-600">
-          LearningPlatform
+          Tech Insights
         </a>
       </div>
       
