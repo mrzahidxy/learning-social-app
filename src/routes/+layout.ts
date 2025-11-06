@@ -12,9 +12,18 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
         cookies: { getAll: () => data.cookies ?? [] }
       });
 
-  // Safe here: client on browser; on server this reads LayoutData (already validated)
-  const { data: { session } } = await supabase.auth.getSession();
-  const { data: { user } } = await supabase.auth.getUser();
+  let session = data.session ?? null;
+  let user = data.user ?? null;
+
+  if (isBrowser()) {
+    const [{ data: sessionData, error: sessionError }, { data: userData, error: userError }] =
+      await Promise.all([supabase.auth.getSession(), supabase.auth.getUser()]);
+
+    user = !userError ? userData.user ?? null : null;
+
+    const browserSession = sessionData.session;
+    session = !sessionError && browserSession && user ? { ...browserSession, user } : null;
+  }
 
   return { supabase, session, user };
 };
