@@ -6,6 +6,8 @@
 	import { validateField } from '$lib/utils/validate';
 	import { createClient } from '@supabase/supabase-js';
 	import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
+	import MailIcon from '$lib/icons/MailIcon.svelte';
+	import SendIcon from '$lib/icons/SendIcon.svelte';
 
 	const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
@@ -28,13 +30,13 @@
 	}
 
 	/**
-	 * Simulates magic link API request
-	 * In production, replace with actual API call
+	 * Sends a magic link to the provided email address
+	 * @param emailAddress - Email address to send the magic link to
+	 * @returns Promise resolving to an object containing a boolean indicating success and an optional message
 	 */
 	async function sendMagicLink(
 		emailAddress: string
 	): Promise<{ success: boolean; message?: string }> {
-
 		const { error } = await supabase.auth.signInWithOtp({
 			email: emailAddress,
 			options: {
@@ -111,8 +113,16 @@
 		{:else}
 			<div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 				<div class="mb-6 space-y-3 text-center">
-					<div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-sm">
-						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+					<div
+						class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-sm"
+					>
+						<svg
+							class="h-5 w-5"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+							aria-hidden="true"
+						>
 							<path
 								stroke-linecap="round"
 								stroke-linejoin="round"
@@ -150,22 +160,12 @@
 								oninput={handleEmailInput}
 								disabled={isLoading}
 								placeholder="you@company.com"
-								class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 shadow-sm transition-colors duration-200 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+								class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 shadow-sm transition-colors duration-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
 								class:border-red-300={errors.email}
 								class:focus:ring-red-500={errors.email}
 								aria-describedby={errors.email ? 'email-error' : 'email-description'}
 								aria-invalid={errors.email ? 'true' : 'false'}
 							/>
-							<div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
-									/>
-								</svg>
-							</div>
 						</div>
 						{#if errors.email}
 							<p id="email-error" class="text-xs text-red-600" role="alert" aria-live="polite">
@@ -180,21 +180,14 @@
 					<button
 						type="submit"
 						disabled={isLoading}
-						class="flex w-full items-center justify-center rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+						class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
 						aria-describedby="submit-description"
 					>
 						{#if isLoading}
 							<LoadingSpinner />
 							<span class="ml-2">Sending magic link…</span>
 						{:else}
-							<svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-								/>
-							</svg>
+							<SendIcon />
 							Send magic link
 						{/if}
 					</button>
