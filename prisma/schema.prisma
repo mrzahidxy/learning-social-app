@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  directUrl    = env("DIRECT_URL")
+  schemas      = ["public"]
+  relationMode = "prisma"
+}
+
+enum Role {
+  READER
+  AUTHOR
+  ADMIN
+
+  @@schema("public")
+}
+
+model Profile {
+  userId       String    @id @db.Uuid
+  role         Role      @default(READER)
+  displayName  String?
+  bio          String?
+  profileImage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  articles     Article[]
+
+  @@index([userId])
+  @@schema("public")
+}
+
+model Article {
+  id           String   @id @default(uuid()) @db.Uuid
+  authorUserId String   @db.Uuid
+  author       Profile  @relation(fields: [authorUserId], references: [userId])
+  title        String
+  content      String
+  imageUrl     String?
+  published    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([authorUserId])
+  @@index([published])
+  @@schema("public")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  articleId String   @db.Uuid
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, read, createdAt])
+  @@index([articleId])
+  @@schema("public")
+}
+
+model Subscription {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  authorUserId String   @db.Uuid
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, authorUserId])
+  @@index([userId])
+  @@schema("public")
+}

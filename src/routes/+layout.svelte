@@ -1,9 +1,10 @@
 <script>
 	import '../app.css';
-	import { goto, invalidate } from '$app/navigation';
+	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import Navbar from '$lib/components/navbar/Navbar.svelte';
 	let { data, children } = $props();
-	let { session, supabase } = $derived(data);
+	let { supabase, user } = $derived(data);
 
 	onMount(() => {
 		const {
@@ -17,12 +18,6 @@
 	});
 </script>
 
-{#if session}
-	<form method="POST" action="/signout" class="absolute top-4 right-4">
-		<button class="cursor-pointer bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700">
-			Sign out
-		</button>
-	</form>
-{/if}
+<Navbar {user} />
 
 {@render children()}
