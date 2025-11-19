@@ -87,8 +87,8 @@
 </script>
 
 <nav class="bg-white shadow-sm">
-	<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-		<div class="flex h-16 justify-between">
+	<div class="px-4 sm:px-6 lg:px-8">
+		<div class="flex h-16 items-center justify-between">
 			<div class="flex items-center">
 				<a href="/" class="flex-shrink-0 text-xl font-bold text-blue-600"> Tech Insights </a>
 			</div>

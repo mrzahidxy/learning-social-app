@@ -1,1 +1,7 @@
-export const PUBLIC_ROUTES = [/^\/$/, /^\/login$/, /^\/confirm(?:\/|$)/, /^\/assets\/|^\/favicon/];
+export const PUBLIC_ROUTES = [
+  /^\/$/, 
+  /^\/login$/, 
+  /^\/confirm(?:\/|$)/, 
+  /^\/assets\/|^\/favicon/,
+  /^\/articles(?:\/.*)?$/
+];
