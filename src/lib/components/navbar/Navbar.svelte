@@ -6,9 +6,10 @@
 	type NavbarProps = {
 		user?: User | null;
 		supabase?: SupabaseClient | null;
+		profile?: { displayName: string | null; role: string | null; profileImage: string | null } | null;
 	};
 
-	const { user = null, supabase = null }: NavbarProps = $props();
+	const { user = null, supabase = null, profile = null }: NavbarProps = $props();
 	const SIGN_OUT_REDIRECT = '/login';
 
 	let isDropdownOpen = $state(false);
@@ -17,8 +18,16 @@
 	let dropdownContainer: HTMLDivElement | undefined;
 
 	$effect(() => {
-		profileImageSrc = user?.user_metadata?.avatar_url || '/images/placeholder-avatar.svg';
+		profileImageSrc =
+			profile?.profileImage ||
+			user?.user_metadata?.avatar_url ||
+			'/images/placeholder-avatar.svg';
 	});
+
+	const displayName = $derived(
+		profile?.displayName || user?.user_metadata?.full_name || user?.email || 'Profile'
+	);
+	const displayRole = $derived(profile?.role ?? null);
 
 	function handleProfileImageError() {
 		profileImageSrc = '/images/placeholder-avatar.svg';
@@ -87,8 +96,8 @@
 </script>
 
 <nav class="bg-white shadow-sm">
-	<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-		<div class="flex h-16 justify-between">
+	<div class="px-4 sm:px-6 lg:px-8">
+		<div class="flex h-16 items-center justify-between">
 			<div class="flex items-center">
 				<a href="/" class="flex-shrink-0 text-xl font-bold text-blue-600"> Tech Insights </a>
 			</div>
@@ -120,14 +129,23 @@
 							aria-labelledby="user-menu-button"
 							tabindex="-1"
 						>
-							<div class="border-b border-gray-200 px-4 py-2">
+							<a
+								href="/user/profile"
+								class="block border-b border-gray-200 px-4 py-2 hover:bg-gray-50"
+								role="menuitem"
+							>
 								<p class="truncate text-sm font-medium text-gray-900">
-									{user.user_metadata?.full_name || user.email}
+									{displayName}
 								</p>
 								<p class="truncate text-xs text-gray-500">
 									{user.email}
 								</p>
-							</div>
+								{#if displayRole}
+									<span class="mt-1 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
+										{displayRole}
+									</span>
+								{/if}
+							</a>
 							<form method="POST" action="/signout" class="contents" bind:this={signOutForm}>
 								<button
 									type="button"

@@ -4,7 +4,7 @@
 	import { onMount } from 'svelte';
 	import Navbar from '$lib/components/navbar/Navbar.svelte';
 	let { data, children } = $props();
-	let { supabase, user } = $derived(data);
+	let { supabase, user, profile } = $derived(data);
 
 	onMount(() => {
 		const {
@@ -18,6 +18,6 @@
 	});
 </script>
 
-<Navbar {user} />
+<Navbar {user} {profile} />
 
 {@render children()}
