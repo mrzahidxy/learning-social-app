@@ -2,8 +2,7 @@
 	import { goto } from '$app/navigation';
 	import ArticleCard from '$lib/components/articles/ArticleCard.svelte';
 	import ArticleFilters from '$lib/components/articles/ArticleFilters.svelte';
-	import NextIcon from '$lib/icons/NextIcon.svelte';
-	import PreviousIcon from '$lib/icons/PreviousIcon.svelte';
+	import Pagination from '$lib/components/Pagination.svelte';
 	import type { Article } from '$lib/types/article';
 	import type { Author } from '$lib/types/author';
 
@@ -56,7 +55,7 @@
 			params.set('q', trimmed);
 		}
 
-		if (sortOption !== 'latest') {
+		if (sortOption) {
 			params.set('sort', sortOption);
 		}
 
@@ -128,7 +127,7 @@
 				<div class="pb-1">
 					<button
 						type="submit"
-						class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+						class="inline-flex cursor-pointer items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
 					>
 						Apply
 					</button>
@@ -194,33 +193,14 @@
 		</div>
 	{/if}
 
-	{#if !isLoading && pagination().totalPages > 1}
-		<div class="flex items-center justify-center gap-2">
-			<button
-				type="button"
-				onclick={goToPrev}
-				class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:z-20 disabled:cursor-not-allowed disabled:opacity-50"
-				disabled={!pagination().hasPrev}
-				aria-label="Previous page"
-			>
-				<PreviousIcon size={16} />
-			</button>
-
-			<div class="flex items-center">
-				<span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700">
-					Page {pagination().page} of {pagination().totalPages}
-				</span>
-			</div>
-
-			<button
-				type="button"
-				onclick={goToNext}
-				class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:z-20 disabled:cursor-not-allowed disabled:opacity-50"
-				disabled={!pagination().hasNext}
-				aria-label="Next page"
-			>
-				<NextIcon size={16} />
-			</button>
-		</div>
+	{#if !isLoading}
+		<Pagination
+			page={pagination().page}
+			totalPages={pagination().totalPages}
+			hasPrev={pagination().hasPrev}
+			hasNext={pagination().hasNext}
+			onPrev={goToPrev}
+			onNext={goToNext}
+		/>
 	{/if}
 </section>
