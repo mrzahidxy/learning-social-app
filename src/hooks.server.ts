@@ -4,6 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import type { Session, User } from '@supabase/supabase-js';
+import type { Role } from '@prisma/client';
+import prisma from '$lib/server/prisma';
 
 declare global {
 	namespace App {
@@ -12,6 +14,7 @@ declare global {
 			safeGetSession: () => Promise<{ session: Session | null; user: User | null }>;
 			session: Session | null;
 			user: User | null;
+			profile: { displayName: string | null; role: Role | null; profileImage: string | null } | null;
 		}
 	}
 }
@@ -58,6 +61,25 @@ const attachAuth: Handle = async ({ event, resolve }) => {
 	const { session, user } = await event.locals.safeGetSession();
 	event.locals.session = session;
 	event.locals.user = user;
+	event.locals.profile = null;
+
+	if (user?.id) {
+		try {
+			const profile = await prisma.profile.findUnique({
+				where: { userId: user.id },
+				select: { displayName: true, role: true, profileImage: true }
+			});
+			if (profile) {
+				event.locals.profile = {
+					displayName: profile.displayName ?? null,
+					role: profile.role ?? null,
+					profileImage: profile.profileImage ?? null
+				};
+			}
+		} catch (err) {
+			console.error('Failed to load profile', err);
+		}
+	}
 
 	return resolve(event);
 };

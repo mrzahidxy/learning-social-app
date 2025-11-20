@@ -9,5 +9,5 @@ export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 	if (!session && !isPublic) {
 		throw redirect(303, `/login`);
 	}
-	return { session, user, cookies: cookies.getAll() };
+	return { session, user, profile: locals.profile ?? null, cookies: cookies.getAll() };
 };

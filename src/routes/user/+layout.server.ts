@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { PUBLIC_ROUTES } from '$lib/constants/auth';
-import { ensureRole } from '$lib/utils/ensureRole';
+import prisma from '$lib/server/prisma';
 
 export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 	const isPublic = PUBLIC_ROUTES.some((rx) => rx.test(url.pathname));
@@ -11,10 +11,9 @@ export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 		throw redirect(303, `/login`);
 	}
 
-	// Check role restrictions for /author routes
-	if (url.pathname.startsWith('/author')) {
-		await ensureRole(user?.id, 'AUTHOR');
-	}
+	const profile = user?.id
+		? await prisma.profile.findUnique({ where: { userId: user.id }, select: { role: true } })
+		: null;
 
-	return { session, user, cookies: cookies.getAll() };
+	return { session, user, cookies: cookies.getAll(), role: profile?.role ?? null };
 };
