@@ -1,35 +1,39 @@
 import { error, json } from '@sveltejs/kit';
 import prisma from '$lib/server/prisma';
 import type { RequestHandler } from './$types';
-import { ensureAdmin } from '$lib/utils/ensureAdmin';
 
-export const POST: RequestHandler = async ({ params, request, locals }) => {
-	const userId = locals.user?.id;
-	let isAdmin = false;
+const ensureAdmin = async (userId: string | undefined | null) => {
+	if (!userId) {
+		throw error(401, 'Unauthorized');
+	}
 
-	try {
-		await ensureAdmin(locals.user?.id ?? null);
-		isAdmin = true;
-	} catch (error) {}
-
-	const article = await prisma.article.findUnique({
-		where: { id: params.id },
-		select: { id: true, authorUserId: true }
+	const profile = await prisma.profile.findUnique({
+		where: { userId },
+		select: { role: true }
 	});
 
-	if (!article) {
-		throw error(404, 'Article not found');
+	if (profile?.role !== 'ADMIN') {
+		throw error(403, 'Forbidden');
 	}
+};
 
-	if (!isAdmin && userId !== article.authorUserId) {
-		throw error(403, 'You are not authorized');
-	}
+export const POST: RequestHandler = async ({ params, request, locals }) => {
+	await ensureAdmin(locals.user?.id ?? null);
 
 	const body = await request.json();
 	const nextState = body?.published;
 
 	if (typeof nextState !== 'boolean') {
 		throw error(400, 'Invalid payload');
+	}
+
+	const article = await prisma.article.findUnique({
+		where: { id: params.id },
+		select: { id: true }
+	});
+
+	if (!article) {
+		throw error(404, 'Article not found');
 	}
 
 	const updated = await prisma.article.update({

@@ -14,7 +14,6 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
 
   let session = data.session ?? null;
   let user = data.user ?? null;
-  let profile = data.profile ?? null;
 
   if (isBrowser()) {
     const [{ data: sessionData, error: sessionError }, { data: userData, error: userError }] =
@@ -26,5 +25,5 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
     session = !sessionError && browserSession && user ? { ...browserSession, user } : null;
   }
 
-  return { supabase, session, user, profile };
+  return { supabase, session, user };
 };
