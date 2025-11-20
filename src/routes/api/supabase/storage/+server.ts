@@ -34,6 +34,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		});
 	} catch (err) {
 		console.error('Supabase upload signature generation failed:', err);
+		if (err && typeof err === 'object' && 'status' in err) {
+			throw err;
+		}
 		throw error(500, 'Failed to generate upload signature');
 	}
 };

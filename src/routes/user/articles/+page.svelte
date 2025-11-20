@@ -35,7 +35,7 @@
 		const trimmed = searchTerm.trim();
 		if (trimmed) params.set('q', trimmed);
 		if (statusFilter !== 'all') params.set('status', statusFilter);
-		goto(`/author/articles${params.size ? `?${params}` : ''}`);
+		goto(`/user/articles${params.size ? `?${params}` : ''}`);
 	}
 
 	async function setPublished(articleId: string, nextState: boolean) {
