@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
-	import SupabaseImageUpload from '$lib/components/SupabaseImageUpload.svelte';
+	import SupabaseImageUpload from '$lib/features/user/components/SupabaseImageUpload.svelte';
 	import type { SvelteComponent } from 'svelte';
 
 	type CreateArticleSuccess = { article?: { published?: boolean } };

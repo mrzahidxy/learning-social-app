@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MagicLinkForm from '$lib/features/login/MagicLinkForm.svelte';
+	import MagicLinkForm from '$lib/features/auth/components/MagicLinkForm.svelte';
 </script>
 
 <svelte:head>

@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import prisma from '$lib/server/prisma';
-import { ensureAdmin } from '$lib/utils/ensureAdmin';
+import { ensureAdmin } from '$lib/features/admin/utils/ensureAdmin';
 import type { PageServerLoad } from './$types';
 
 const PAGE_SIZE = 10;

@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { marked } from 'marked';
 
-	import { handleImageError } from '$lib/utils/common';
-	import SaveIcon from '$lib/icons/SaveIcon.svelte';
-	import ArticleCard from '$lib/components/articles/ArticleCard.svelte';
-	import ShareIcon from '$lib/icons/ShareIcon.svelte';
-	import PageWrapper from '$lib/components/PageWrapper.svelte';
+	import { handleImageError } from '$lib/shared/utils/common';
+	import SaveIcon from '$lib/shared/icons/SaveIcon.svelte';
+	import ArticleCard from '$lib/features/articles/components/ArticleCard.svelte';
+	import ShareIcon from '$lib/shared/icons/ShareIcon.svelte';
+	import PageWrapper from '$lib/shared/components/PageWrapper.svelte';
 	import { browser } from '$app/environment';
 
 	let { data } = $props();

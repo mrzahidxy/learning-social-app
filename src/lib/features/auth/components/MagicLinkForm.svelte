@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import LoadingSpinner from '../../components/LoadingSpinner.svelte';
+	import LoadingSpinner from '$lib/shared/components/LoadingSpinner.svelte';
 	import SuccessMessage from './SuccessMessage.svelte';
-	import ErrorMessage from '../../components/ErrorMessage.svelte';
-	import { validateField } from '$lib/utils/validate';
+	import ErrorMessage from '$lib/shared/components/ErrorMessage.svelte';
+	import { validateField } from '$lib/features/auth/utils/validate';
 	import { createClient } from '@supabase/supabase-js';
 	import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
-	import SendIcon from '$lib/icons/SendIcon.svelte';
+	import SendIcon from '$lib/shared/icons/SendIcon.svelte';
 
 	const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 

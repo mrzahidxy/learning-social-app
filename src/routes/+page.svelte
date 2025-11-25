@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import ArticleCard from '$lib/components/articles/ArticleCard.svelte';
-	import ArticleFilters from '$lib/components/articles/ArticleFilters.svelte';
-	import NextIcon from '$lib/icons/NextIcon.svelte';
-	import PreviousIcon from '$lib/icons/PreviousIcon.svelte';
-	import type { Article } from '$lib/types/article';
-	import type { Author } from '$lib/types/author';
+	import ArticleCard from '$lib/features/articles/components/ArticleCard.svelte';
+	import ArticleFilters from '$lib/features/articles/components/ArticleFilters.svelte';
+	import NextIcon from '$lib/shared/icons/NextIcon.svelte';
+	import PreviousIcon from '$lib/shared/icons/PreviousIcon.svelte';
+	import type { Article } from '$lib/features/articles/types';
+	import type { Author } from '$lib/features/authors/types';
 
 	type ArticleWithAuthor = Article & { author: Author | null };
 

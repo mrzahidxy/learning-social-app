@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import prisma from '$lib/server/prisma';
-import { ensureRole } from '$lib/utils/ensureRole';
+import { ensureRole } from '$lib/features/user/utils/ensureRole';
 
 const sanitizeText = (value: string | null) => value?.trim() ?? '';
 const validateBoolean = (value: string | null) =>
