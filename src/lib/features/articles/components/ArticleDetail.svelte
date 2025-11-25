@@ -1,10 +1,10 @@
 <script lang="ts">
-  import articlesData from '$lib/data/articles.json';
-  import authorsData from '$lib/data/authors.json';
-  import type { Article, RawArticleData } from '$lib/types/article';
-  import type { Author, RawAuthorData } from '$lib/types/author';
-  import { getInitials } from '$lib/utils/common';
-  import { formatDate } from '$lib/utils/date';
+  import articlesData from '$lib/features/articles/data/articles.json';
+  import authorsData from '$lib/features/authors/data/authors.json';
+  import type { Article, RawArticleData } from '$lib/features/articles/types';
+  import type { Author, RawAuthorData } from '$lib/features/authors/types';
+  import { getInitials } from '$lib/shared/utils/common';
+  import { formatDate } from '$lib/shared/utils/date';
 
   export let articleId: string;
 

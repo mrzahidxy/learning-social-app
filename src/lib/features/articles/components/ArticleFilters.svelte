@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SearchIcon from '$lib/icons/SearchIcon.svelte';
+	import SearchIcon from '$lib/shared/icons/SearchIcon.svelte';
 
 	let {
 		searchTerm = $bindable(''),

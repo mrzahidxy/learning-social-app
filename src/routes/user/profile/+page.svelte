@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import type { SubmitFunction } from '@sveltejs/kit';
-	import SupabaseImageUpload from '$lib/components/SupabaseImageUpload.svelte';
+	import SupabaseImageUpload from '$lib/features/user/components/SupabaseImageUpload.svelte';
 	import type { SvelteComponent } from 'svelte';
 
 	const props = $props();

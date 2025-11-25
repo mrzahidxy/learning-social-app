@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
-	import { STATUS_OPTIONS } from '$lib/constants/adminArticle';
-	import type { AdminArticle } from '$lib/types/article';
-	import { formatDateTime } from '$lib/utils/date';
+	import { STATUS_OPTIONS } from '$lib/features/articles/constants/statusOptions';
+	import type { AdminArticle } from '$lib/features/articles/types';
+	import { formatDateTime } from '$lib/shared/utils/date';
 
 	const props = $props<{
 		data: {

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { Article } from '$lib/types/article';
-	import type { Author } from '$lib/types/author';
-	import { handleImageError } from '$lib/utils/common';
+	import type { Article } from '$lib/features/articles/types';
+	import type { Author } from '$lib/features/authors/types';
+	import { handleImageError } from '$lib/shared/utils/common';
 
 	const { article, author } = $props<{ article: Article; author: Author }>();
 

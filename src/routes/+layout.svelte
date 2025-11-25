@@ -2,7 +2,7 @@
 	import '../app.css';
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import Navbar from '$lib/components/navbar/Navbar.svelte';
+	import Navbar from '$lib/shared/components/navbar/Navbar.svelte';
 	let { data, children } = $props();
 	let { supabase, user, profile } = $derived(data);
 

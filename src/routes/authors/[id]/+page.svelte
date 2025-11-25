@@ -1,8 +1,8 @@
 <script lang="ts">
-	import ArticleCard from '$lib/components/articles/ArticleCard.svelte';
-	import BookIcon from '$lib/icons/BookIcon.svelte';
-	import FollowerIcon from '$lib/icons/FollowerIcon.svelte';
-	import { formatLongDate } from '$lib/utils/common.js';
+	import ArticleCard from '$lib/features/articles/components/ArticleCard.svelte';
+	import BookIcon from '$lib/shared/icons/BookIcon.svelte';
+	import FollowerIcon from '$lib/shared/icons/FollowerIcon.svelte';
+	import { formatLongDate } from '$lib/shared/utils/common.js';
 
 	let { data } = $props();
 

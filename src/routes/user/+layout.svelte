@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AuthorSidebar from '$lib/features/author/AuthorSidebar.svelte';
+	import AuthorSidebar from '$lib/features/user/components/AuthorSidebar.svelte';
 
 	const props = $props();
 

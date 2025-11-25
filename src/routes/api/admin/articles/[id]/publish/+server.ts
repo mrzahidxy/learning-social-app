@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import prisma from '$lib/server/prisma';
 import type { RequestHandler } from './$types';
-import { ensureAdmin } from '$lib/utils/ensureAdmin';
+import { ensureAdmin } from '$lib/features/admin/utils/ensureAdmin';
 
 export const POST: RequestHandler = async ({ params, request, locals }) => {
 	const userId = locals.user?.id;

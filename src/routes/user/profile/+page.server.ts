@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import prisma from '$lib/server/prisma';
-import { ensureRole } from '$lib/utils/ensureRole';
+import { ensureRole } from '$lib/features/user/utils/ensureRole';
 import type { Actions, PageServerLoad } from './$types';
 import type { Role } from '@prisma/client';
 
