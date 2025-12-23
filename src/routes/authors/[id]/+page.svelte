@@ -3,12 +3,17 @@
 	import BookIcon from '$lib/shared/icons/BookIcon.svelte';
 	import FollowerIcon from '$lib/shared/icons/FollowerIcon.svelte';
 	import { formatLongDate } from '$lib/shared/utils/common.js';
+	import { onMount } from 'svelte';
 
 	let { data } = $props();
 
 	let authorImageSrc: string = $state(
 		data?.author?.profileImage || '/images/placeholder-avatar.svg'
 	);
+	const authorUserId = data.author.userId;
+
+	let isFollowing = $state(false);
+	let isLoading = $state(false);
 
 	function handleAuthorImageError() {
 		authorImageSrc = '/images/placeholder-avatar.svg';
@@ -16,6 +21,38 @@
 
 	// Format the join date
 	const formattedDate = $derived(formatLongDate(data.author.createdAt));
+
+	// Fetch follow status after hydration so we don't block SSR.
+	onMount(async () => {
+		try {
+			const res = await fetch(`/api/subscription?authorUserId=${authorUserId}`);
+			if (!res.ok) return;
+			const body = (await res.json()) as { data?: { isSubscribed?: boolean } };
+			isFollowing = Boolean(body?.data?.isSubscribed);
+		} catch (err) {
+			console.error('Unable to fetch follow status', err);
+		}
+	});
+
+	async function toggleFollow() {
+		isLoading = true;
+		try {
+			const method = isFollowing ? 'DELETE' : 'POST';
+			const res = await fetch('/api/subscription', {
+				method,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ authorUserId })
+			});
+
+			if (!res.ok) return;
+
+			isFollowing = method === 'POST';
+		} catch (err) {
+			console.error('Unable to toggle follow', err);
+		} finally {
+			isLoading = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -55,9 +92,17 @@
 			</div>
 			<div class="ml-auto">
 				<button
-					class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+					class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+					disabled={isLoading}
+					onclick={toggleFollow}
 				>
-					Follow
+					{#if isLoading}
+						...
+					{:else if isFollowing}
+						Following
+					{:else}
+						Follow
+					{/if}
 				</button>
 			</div>
 		</div>
