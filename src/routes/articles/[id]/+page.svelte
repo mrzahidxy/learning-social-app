@@ -82,7 +82,16 @@
 	let isFollowing = $state<boolean>();
 
 	$effect(() => {
-		isFollowing = data?.isSubscribed;
+		(async () => {
+			try {
+				const res = await fetch(`/api/subscription?authorUserId=${data?.author.userId}`);
+				if (!res.ok) return;
+				const body = (await res.json()) as { data?: { isSubscribed?: boolean } };
+				isFollowing = Boolean(body?.data?.isSubscribed);
+			} catch (err) {
+				console.error('Unable to fetch follow status', err);
+			}
+		})();
 	});
 
 	async function toggleFollow() {

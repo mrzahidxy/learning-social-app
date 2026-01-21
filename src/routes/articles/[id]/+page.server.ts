@@ -38,20 +38,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		throw error(404, 'Article not found');
 	}
 
-	// Get viewer
-	const viewerId = locals.user?.id;
-	const isSubscribed = viewerId
-		? await prisma.subscription.findUnique({
-				where: {
-					userId_authorUserId: {
-						userId: viewerId,
-						authorUserId: article.authorUserId
-					}
-				},
-				select: { id: true }
-			})
-		: null;
-
 	// Get author stats
 	const [totalArticles, totalSubscribers, relatedArticles] = await Promise.all([
 		prisma.article.count({
@@ -103,7 +89,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		article,
 		author: article.author,
 		relatedArticles,
-		authorStats: { totalArticles, totalSubscribers },
-		isSubscribed: Boolean(isSubscribed)
+		authorStats: { totalArticles, totalSubscribers }
 	};
 };
