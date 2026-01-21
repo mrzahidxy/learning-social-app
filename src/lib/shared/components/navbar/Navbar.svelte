@@ -6,31 +6,36 @@
 	type NavbarProps = {
 		user?: User | null;
 		supabase?: SupabaseClient | null;
-		profile?: { displayName: string | null; role: string | null; profileImage: string | null } | null;
+		profile?: {
+			displayName: string | null;
+			role: string | null;
+			profileImage: string | null;
+		} | null;
 	};
 
 	const { user = null, supabase = null, profile = null }: NavbarProps = $props();
 	const SIGN_OUT_REDIRECT = '/login';
+	const FALLBACK_PROFILE_IMAGE = '/images/placeholder-avatar.svg';
 
 	let isDropdownOpen = $state(false);
 	let profileImageSrc = $state('');
 	let signOutForm: HTMLFormElement | undefined;
 	let dropdownContainer: HTMLDivElement | undefined;
 
-	$effect(() => {
-		profileImageSrc =
-			profile?.profileImage ||
-			user?.user_metadata?.avatar_url ||
-			'/images/placeholder-avatar.svg';
-	});
-
 	const displayName = $derived(
 		profile?.displayName || user?.user_metadata?.full_name || user?.email || 'Profile'
 	);
 	const displayRole = $derived(profile?.role ?? null);
+	const preferredProfileImage = $derived(
+		profile?.profileImage || user?.user_metadata?.avatar_url || FALLBACK_PROFILE_IMAGE
+	);
+
+	$effect(() => {
+		profileImageSrc = preferredProfileImage;
+	});
 
 	function handleProfileImageError() {
-		profileImageSrc = '/images/placeholder-avatar.svg';
+		profileImageSrc = FALLBACK_PROFILE_IMAGE;
 	}
 
 	function toggleDropdown() {
@@ -83,13 +88,13 @@
 		}
 	}
 
-	onMount(() => {
-		const handleDocumentClick = (event: MouseEvent) => {
-			if (!dropdownContainer?.contains(event.target as Node)) {
-				closeDropdown();
-			}
-		};
+	const handleDocumentClick = (event: MouseEvent) => {
+		if (!dropdownContainer?.contains(event.target as Node)) {
+			closeDropdown();
+		}
+	};
 
+	onMount(() => {
 		document.addEventListener('click', handleDocumentClick);
 		return () => document.removeEventListener('click', handleDocumentClick);
 	});
@@ -141,7 +146,9 @@
 									{user.email}
 								</p>
 								{#if displayRole}
-									<span class="mt-1 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
+									<span
+										class="mt-1 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700"
+									>
 										{displayRole}
 									</span>
 								{/if}
@@ -158,6 +165,10 @@
 							</form>
 						</div>
 					{/if}
+				</div>
+			{:else}
+				<div class="flex items-center">
+					<a href="/login" class="text-sm font-medium text-blue-600 hover:text-blue-500">Sign in</a>
 				</div>
 			{/if}
 		</div>
