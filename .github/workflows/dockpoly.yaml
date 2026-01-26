@@ -27,6 +27,9 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          build-args: |
+            PUBLIC_SUPABASE_URL=${{ secrets.PUBLIC_SUPABASE_URL }}
+            PUBLIC_SUPABASE_ANON_KEY=${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/social-learning-app:latest
           platforms: linux/amd64
