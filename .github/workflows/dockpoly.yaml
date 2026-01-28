@@ -3,13 +3,11 @@ name: Build and Push Dockploy Image
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: client
 
     steps:
       - name: Checkout repository
