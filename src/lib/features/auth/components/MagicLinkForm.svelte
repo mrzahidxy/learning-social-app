@@ -38,9 +38,7 @@
 	): Promise<{ success: boolean; message?: string }> {
 		const { error } = await supabase.auth.signInWithOtp({
 			email: emailAddress,
-			options: {
-				emailRedirectTo: '/(auth)/confirm'
-			}
+	 options: { emailRedirectTo: `${window.location.origin}/confirm` }
 		});
 
 		if (error) {
