@@ -19,8 +19,8 @@
 
 	let isDropdownOpen = $state(false);
 	let profileImageSrc = $state('');
-	let signOutForm: HTMLFormElement | undefined;
-	let dropdownContainer: HTMLDivElement | undefined;
+	let signOutForm = $state<HTMLFormElement>();
+	let dropdownContainer = $state<HTMLDivElement>();
 
 	const displayName = $derived(
 		profile?.displayName || user?.user_metadata?.full_name || user?.email || 'Profile'

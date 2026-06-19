@@ -1,63 +1,70 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const DEMO_ARTICLE_ID = '00000000-0000-4000-8000-000000000001';
 
 async function main() {
-  // Example Supabase user IDs (replace with real UUIDs from auth.users)
-  const readerId = 'cc293aea-a555-4d8a-a73c-4b48149a4169'
-  const authorId = 'ddbda57a-2cff-4a46-bcb2-b41867dfd1a7'
+	const adminUserId = process.env.SEED_ADMIN_USER_ID?.trim();
 
-  // Profile seeds
-  await prisma.profile.createMany({
-    data: [
-      {
-        userId: readerId,
-        role: 'READER',
-        displayName: 'Demo Reader',
-        bio: 'Reads articles daily.',
-      },
-      {
-        userId: authorId,
-        role: 'AUTHOR',
-        displayName: 'Jane Author',
-        bio: 'Writes about Svelte + Supabase.',
-      },
-    ],
-    skipDuplicates: true,
-  })
+	if (!adminUserId) {
+		throw new Error('SEED_ADMIN_USER_ID is required. Set it to an existing Supabase Auth user ID.');
+	}
 
-  // Article
-  const article = await prisma.article.create({
-    data: {
-      authorUserId: authorId,
-      title: 'Hello World',
-      content: 'This is the first article.',
-      published: true,
-    },
-  })
+	if (!UUID_PATTERN.test(adminUserId)) {
+		throw new Error('SEED_ADMIN_USER_ID must be a valid UUID.');
+	}
 
-  // Subscription
-  await prisma.subscription.create({
-    data: {
-      userId: readerId,
-      authorUserId: authorId,
-    },
-  })
+	const admin = await prisma.profile.upsert({
+		where: { userId: adminUserId },
+		create: {
+			userId: adminUserId,
+			role: 'ADMIN',
+			displayName: 'Project Admin'
+		},
+		update: {
+			role: 'ADMIN'
+		},
+		select: {
+			userId: true,
+			role: true,
+			displayName: true
+		}
+	});
 
-  // Notification
-  await prisma.notification.create({
-    data: {
-      userId: readerId,
-      articleId: article.id,
-      message: 'New article published by Jane Author',
-    },
-  })
+	const article = await prisma.article.upsert({
+		where: { id: DEMO_ARTICLE_ID },
+		create: {
+			id: DEMO_ARTICLE_ID,
+			authorUserId: admin.userId,
+			title: 'Welcome to the Learning Community',
+			content:
+				'This demo article introduces the learning community. Authors can publish practical lessons, share useful resources, and help readers learn together.',
+			published: true
+		},
+		update: {
+			authorUserId: admin.userId,
+			title: 'Welcome to the Learning Community',
+			content:
+				'This demo article introduces the learning community. Authors can publish practical lessons, share useful resources, and help readers learn together.',
+			published: true
+		},
+		select: {
+			id: true,
+			title: true
+		}
+	});
+
+	console.log(`Seeded admin profile for ${admin.displayName ?? admin.userId} (${admin.userId}).`);
+	console.log(`Seeded demo article "${article.title}" (${article.id}).`);
 }
 
 main()
-  .then(() => console.log('Seed complete'))
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(() => prisma.$disconnect())
+	.catch((error) => {
+		console.error('Seed failed:', error instanceof Error ? error.message : error);
+		process.exitCode = 1;
+	})
+	.finally(async () => {
+		await prisma.$disconnect();
+	});

@@ -4,11 +4,9 @@
 	import SuccessMessage from './SuccessMessage.svelte';
 	import ErrorMessage from '$lib/shared/components/ErrorMessage.svelte';
 	import { validateField } from '$lib/features/auth/utils/validate';
-	import { createClient } from '@supabase/supabase-js';
+	import { createBrowserClient } from '@supabase/ssr';
 	import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import SendIcon from '$lib/shared/icons/SendIcon.svelte';
-
-	const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
 	// Form state management
 	let email = $state('');
@@ -16,7 +14,8 @@
 	let isSubmitted = $state(false);
 	let errors = $state<{ email?: string; general?: string }>({});
 	let showSuccess = $state(false);
-	let formElement: HTMLFormElement;
+	let submittedEmail = $state('');
+	let formElement = $state<HTMLFormElement>();
 
 	/**
 	 * Real-time email validation on input change
@@ -36,9 +35,12 @@
 	async function sendMagicLink(
 		emailAddress: string
 	): Promise<{ success: boolean; message?: string }> {
+		const supabase = createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 		const { error } = await supabase.auth.signInWithOtp({
 			email: emailAddress,
-	 options: { emailRedirectTo: `${window.location.origin}/confirm` }
+			options: {
+				emailRedirectTo: `${window.location.origin}/confirm?next=/dashboard`
+			}
 		});
 
 		if (error) {
@@ -70,6 +72,7 @@
 			const response = await sendMagicLink(email);
 
 			if (response.success) {
+				submittedEmail = email;
 				showSuccess = true;
 				// Reset form after successful submission
 				email = '';
@@ -96,6 +99,16 @@
 
 	// Focus management for accessibility
 	onMount(() => {
+		const authError = new URLSearchParams(window.location.search).get('error');
+		if (authError) {
+			errors = {
+				general:
+					authError === 'expired'
+						? 'This sign-in link has expired. Request a new one.'
+						: 'The sign-in link is invalid or could not be verified.'
+			};
+		}
+
 		const emailInput = formElement?.querySelector('input[type="email"]') as HTMLInputElement;
 		emailInput?.focus();
 	});
@@ -105,7 +118,7 @@
 	<div class="w-full max-w-sm">
 		{#if showSuccess}
 			<div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-				<SuccessMessage {email} onBack={resetForm} />
+				<SuccessMessage email={submittedEmail} onBack={resetForm} />
 			</div>
 		{:else}
 			<div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -138,7 +151,6 @@
 					onsubmit={handleSubmit}
 					novalidate
 					class="space-y-4"
-					role="form"
 					aria-label="Magic link login form"
 				>
 					{#if errors.general}
