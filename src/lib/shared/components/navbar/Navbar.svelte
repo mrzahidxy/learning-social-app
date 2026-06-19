@@ -14,8 +14,8 @@
 
 	let isDropdownOpen = $state(false);
 	let profileImageSrc = $state('');
-	let signOutForm: HTMLFormElement | undefined;
-	let dropdownContainer: HTMLDivElement | undefined;
+	let signOutForm = $state<HTMLFormElement>();
+	let dropdownContainer = $state<HTMLDivElement>();
 
 	$effect(() => {
 		profileImageSrc =

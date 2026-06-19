@@ -16,7 +16,7 @@
 	let isSubmitted = $state(false);
 	let errors = $state<{ email?: string; general?: string }>({});
 	let showSuccess = $state(false);
-	let formElement: HTMLFormElement;
+	let formElement = $state<HTMLFormElement>();
 
 	/**
 	 * Real-time email validation on input change
@@ -140,7 +140,6 @@
 					onsubmit={handleSubmit}
 					novalidate
 					class="space-y-4"
-					role="form"
 					aria-label="Magic link login form"
 				>
 					{#if errors.general}

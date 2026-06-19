@@ -3,21 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import type { Session, User } from '@supabase/supabase-js';
-import type { Role } from '@prisma/client';
 import prisma from '$lib/server/prisma';
-
-declare global {
-	namespace App {
-		interface Locals {
-			supabase: SupabaseClient | null;
-			safeGetSession: () => Promise<{ session: Session | null; user: User | null }>;
-			session: Session | null;
-			user: User | null;
-			profile: { displayName: string | null; role: Role | null; profileImage: string | null } | null;
-		}
-	}
-}
 
 const withSupabase: Handle = async ({ event, resolve }) => {
 	event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
@@ -32,8 +18,6 @@ const withSupabase: Handle = async ({ event, resolve }) => {
 	}) as SupabaseClient; // cast since createServerClient returns a compatible runtime client
 
 	event.locals.safeGetSession = async () => {
-		if (!event.locals.supabase) return { session: null, user: null };
-
 		const {
 			data: { user },
 			error: userError
