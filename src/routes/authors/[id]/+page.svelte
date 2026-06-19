@@ -5,22 +5,59 @@
 	import { formatLongDate } from '$lib/shared/utils/common.js';
 
 	let { data } = $props();
+	const { author, articles } = data;
 
-	let authorImageSrc: string = $state(
-		data?.author?.profileImage || '/images/placeholder-avatar.svg'
-	);
+	let authorImageSrc: string = $state(author.profileImage || '/images/placeholder-avatar.svg');
+	const authorUserId = author.userId;
+
+	let isFollowing = $state(false);
+	let isLoading = $state(false);
+
+	const formattedDate = $derived(formatLongDate(author.createdAt));
+	const articleCount = $derived(articles.length);
+	const articleLabel = $derived(articleCount === 1 ? 'article' : 'articles');
 
 	function handleAuthorImageError() {
 		authorImageSrc = '/images/placeholder-avatar.svg';
 	}
 
-	// Format the join date
-	const formattedDate = $derived(formatLongDate(data.author.createdAt));
+	$effect(() => {
+		(async () => {
+			try {
+				const res = await fetch(`/api/subscription?authorUserId=${authorUserId}`);
+				if (!res.ok) return;
+				const body = (await res.json()) as { data?: { isSubscribed?: boolean } };
+				isFollowing = Boolean(body?.data?.isSubscribed);
+			} catch (err) {
+				console.error('Unable to fetch follow status', err);
+			}
+		})();
+	});
+
+	async function toggleFollow() {
+		isLoading = true;
+		try {
+			const method = isFollowing ? 'DELETE' : 'POST';
+			const res = await fetch('/api/subscription', {
+				method,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ authorUserId })
+			});
+
+			if (!res.ok) return;
+
+			isFollowing = method === 'POST';
+		} catch (err) {
+			console.error('Unable to toggle follow', err);
+		} finally {
+			isLoading = false;
+		}
+	}
 </script>
 
 <svelte:head>
-	<title>{data.author.displayName} | Author Profile</title>
-	<meta name="description" content={data.author.bio || `Articles by ${data.author.displayName}`} />
+	<title>{author.displayName} | Author Profile</title>
+	<meta name="description" content={author.bio || `Articles by ${author.displayName}`} />
 </svelte:head>
 
 <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
@@ -30,13 +67,13 @@
 				class="h-24 w-24 rounded-full object-cover"
 				src={authorImageSrc}
 				onerror={handleAuthorImageError}
-				alt={data.author.displayName}
+				alt={author.displayName}
 				width="96"
 				height="96"
 			/>
 			<div class="text-center sm:text-left">
 				<h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">
-					{data.author.displayName}
+					{author.displayName}
 				</h1>
 				<p class="mt-2 text-gray-600">
 					Member since {formattedDate}
@@ -44,8 +81,8 @@
 				<div class="mt-4 flex flex-wrap justify-center gap-4 sm:justify-start">
 					<div class="flex items-center gap-1 text-sm text-gray-500">
 						<BookIcon size={16} />
-						{data.articles.length}
-						{data.articles.length === 1 ? 'article' : 'articles'}
+						{articleCount}
+						{articleLabel}
 					</div>
 					<div class="flex items-center gap-1 text-sm text-gray-500">
 						<FollowerIcon size={16} />
@@ -55,28 +92,36 @@
 			</div>
 			<div class="ml-auto">
 				<button
-					class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+					class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+					disabled={isLoading}
+					onclick={toggleFollow}
 				>
-					Follow
+					{#if isLoading}
+						...
+					{:else if isFollowing}
+						Following
+					{:else}
+						Follow
+					{/if}
 				</button>
 			</div>
 		</div>
 
-		{#if data.author.bio}
+		{#if author.bio}
 			<div class="mt-6 border-t border-gray-200 pt-6">
 				<h2 class="text-lg font-semibold text-gray-900">About</h2>
-				<p class="mt-2 text-gray-600">{data.author.bio}</p>
+				<p class="mt-2 text-gray-600">{author.bio}</p>
 			</div>
 		{/if}
 	</header>
 
 	<section>
-		<h2 class="mb-6 text-2xl font-bold text-gray-900">Articles by {data.author.displayName}</h2>
+		<h2 class="mb-6 text-2xl font-bold text-gray-900">Articles by {author.displayName}</h2>
 
-		{#if data.articles.length > 0}
+		{#if articles.length > 0}
 			<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-				{#each data.articles as article (article.id)}
-					<ArticleCard {article} author={data.author} />
+				{#each articles as article (article.id)}
+					<ArticleCard {article} {author} />
 				{/each}
 			</div>
 		{:else}

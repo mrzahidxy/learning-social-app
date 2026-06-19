@@ -6,12 +6,38 @@
 	import PreviousIcon from '$lib/shared/icons/PreviousIcon.svelte';
 	import type { Article } from '$lib/features/articles/types';
 	import type { Author } from '$lib/features/authors/types';
+	import type { PageData } from './$types';
 
 	type ArticleWithAuthor = Article & { author: Author | null };
+	type Tab = 'home' | 'flows';
 
-	const props = $props();
-	const data = $derived(props.data);
-	const articles = $derived(data?.articles as ArticleWithAuthor[]);
+	const { data } = $props<{ data: PageData }>();
+
+	const articles = $derived((data?.articles ?? []) as ArticleWithAuthor[]);
+	const pagination = $derived(
+		data?.pagination ?? {
+			page: 1,
+			pageSize: articles.length,
+			totalItems: articles.length,
+			totalPages: articles.length ? 1 : 0,
+			hasNext: false,
+			hasPrev: false
+		}
+	);
+	const filters = $derived(data?.filters ?? {});
+	const flowsAuthRequired = $derived(Boolean(data?.flowsAuthRequired));
+
+	let searchTerm = $state('');
+	let sortOption = $state<'latest' | 'default'>('latest');
+	let currentPage = $state(1);
+	let tab = $state<Tab>('home');
+
+	$effect(() => {
+		currentPage = pagination.page ?? 1;
+		searchTerm = filters.search ?? '';
+		sortOption = (filters.sort ?? 'latest') as 'latest' | 'default';
+		tab = (filters.tab ?? 'home') as Tab;
+	});
 
 	const fallbackAuthor: Author = {
 		userId: 'unknown',
@@ -23,79 +49,55 @@
 		updatedAt: new Date()
 	};
 
-	let searchTerm = $state('');
-	let sortOption = $state<'latest' | 'default'>('latest');
-	let currentPage = $state(1);
-	let showError = $state(false);
-	let isLoading = $state(false);
-
-	$effect(() => {
-		currentPage = data?.pagination?.page ?? 1;
-		searchTerm = data?.filters?.search ?? '';
-		sortOption = (data?.filters?.sort ?? 'latest') as 'latest' | 'default';
-	});
-
-	const pagination = $derived(
-		() =>
-			data?.pagination ?? {
-				page: 1,
-				pageSize: articles.length,
-				totalItems: articles.length,
-				totalPages: articles.length ? 1 : 0,
-				hasNext: false,
-				hasPrev: false
-			}
-	);
-
-	const navigateWithFilters = (overrides: { page?: number } = {}) => {
+	const navigateWithFilters = (overrides: { page?: number; tab?: Tab } = {}) => {
 		const params = new URLSearchParams();
 		const trimmed = searchTerm.trim();
-		const targetPage = overrides.page ?? pagination().page;
+		const targetPage = overrides.page ?? currentPage;
+		const targetTab = overrides.tab ?? tab;
 
-		if (trimmed) {
-			params.set('q', trimmed);
-		}
+		if (trimmed) params.set('q', trimmed);
+		if (sortOption) params.set('sort', sortOption);
+		if (targetPage > 1) params.set('page', String(targetPage));
+		if (targetTab !== 'home') params.set('tab', targetTab);
 
-		if (sortOption !== 'latest') {
-			params.set('sort', sortOption);
-		}
-
-		if (targetPage > 1) {
-			params.set('page', String(targetPage));
-		}
-
-		goto(params.size ? `?${params.toString()}` : '/', { replaceState: true });
+		goto(params.size ? `?${params.toString()}` : '/', {
+			replaceState: true,
+			invalidateAll: true
+		});
 	};
 
-	const handleFiltersSubmit = (e: Event) => {
-		e?.preventDefault();
-		currentPage = 1;
+	const handleFiltersSubmit = (event: Event) => {
+		event.preventDefault();
 		navigateWithFilters({ page: 1 });
 	};
 
+	const handleTabChange = (nextTab: Tab) => {
+		if (tab === nextTab) return;
+		tab = nextTab;
+		currentPage = 1;
+		navigateWithFilters({ tab: nextTab, page: 1 });
+	};
+
 	const goToPrev = () => {
-		if (pagination().hasPrev) {
-			navigateWithFilters({ page: pagination().page - 1 });
+		if (pagination.hasPrev) {
+			navigateWithFilters({ page: pagination.page - 1 });
 		}
 	};
 
 	const goToNext = () => {
-		if (pagination().hasNext) {
-			navigateWithFilters({ page: pagination().page + 1 });
+		if (pagination.hasNext) {
+			navigateWithFilters({ page: pagination.page + 1 });
 		}
 	};
 
 	const resultSummary = () => {
-		const info = pagination();
-
-		if (!info.totalItems) {
-			return 'No articles found';
-		}
-
-		const start = (info.page - 1) * info.pageSize + 1;
-		const end = Math.min(info.page * info.pageSize, info.totalItems);
-		return `Showing ${start}-${end} of ${info.totalItems} articles`;
+		if (!pagination.totalItems) return 'No articles found';
+		const start = (pagination.page - 1) * pagination.pageSize + 1;
+		const end = Math.min(pagination.page * pagination.pageSize, pagination.totalItems);
+		return `Showing ${start}-${end} of ${pagination.totalItems} articles`;
 	};
+
+	$inspect(sortOption);
 </script>
 
 <svelte:head>
@@ -106,121 +108,118 @@
 	/>
 </svelte:head>
 
-<section class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-	<header class="flex flex-col gap-4">
-		<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-			<div>
-				<h1 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Latest Articles</h1>
-				<p class="mt-1 text-sm text-gray-600 sm:text-base">
-					Explore curated insights from our writing community
-				</p>
-			</div>
-			<div class="text-sm text-gray-600">
-				<span aria-live="polite">{resultSummary()}</span>
-			</div>
-		</div>
-
-		<div class="w-full">
-			<form class="flex-colrow flex gap-4" onsubmit={handleFiltersSubmit}>
-				<div class="flex-1">
-					<ArticleFilters bind:searchTerm bind:sortOption bind:currentPage />
+<div class="bg-slate-50">
+	<section class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+		<header class="flex flex-col gap-5">
+			<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+				<div>
+					<h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+						{tab === 'flows' ? 'Your Flows' : 'Latest Articles'}
+					</h1>
+					<p class="mt-2 text-sm text-slate-600 sm:text-base">
+						{tab === 'flows'
+							? 'Articles from authors you follow'
+							: 'Explore curated insights from our writing community'}
+					</p>
 				</div>
-				<div class="pb-1">
+				<div class="text-sm text-slate-500">
+					<span aria-live="polite">{resultSummary()}</span>
+				</div>
+			</div>
+
+			<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+				<div class="flex flex-row items-center gap-2">
+					<button
+						type="button"
+						class={`rounded-full px-4 py-2 text-sm font-medium transition ${
+							tab === 'home'
+								? 'bg-blue-600 text-white shadow-sm'
+								: 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100'
+						}`}
+						onclick={() => handleTabChange('home')}
+					>
+						Home
+					</button>
+					<button
+						type="button"
+						class={`rounded-full px-4 py-2 text-sm font-medium transition ${
+							tab === 'flows'
+								? 'bg-blue-600 text-white shadow-sm'
+								: 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100'
+						}`}
+						onclick={() => handleTabChange('flows')}
+					>
+						Flows
+					</button>
+				</div>
+
+				<form
+					class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end"
+					onsubmit={handleFiltersSubmit}
+				>
+					<div class="w-full sm:max-w-md">
+						<ArticleFilters bind:searchTerm bind:sortOption bind:currentPage />
+					</div>
 					<button
 						type="submit"
-						class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+						class="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
 					>
 						Apply
 					</button>
-				</div>
-			</form>
-		</div>
-	</header>
+				</form>
+			</div>
+		</header>
 
-	{#if showError}
-		<div role="alert" class="rounded-lg border border-red-400 bg-red-50 p-4 text-red-700">
-			<p class="font-medium">We couldn't load the articles right now.</p>
-			<p class="text-sm">Please refresh or come back in a moment.</p>
-		</div>
-	{/if}
+		{#if flowsAuthRequired}
+			<div role="alert" class="rounded-xl border border-blue-100 bg-blue-50 p-4 text-blue-800">
+				<p class="font-medium">Sign in to view your flows</p>
+				<p class="text-sm">Follow authors to see their articles here.</p>
+			</div>
+		{:else if articles.length === 0}
+			<div
+				class="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center"
+			>
+				<p class="text-sm font-medium text-slate-800">Welcome!</p>
+				<p class="text-sm text-slate-500">No articles yet. Check back soon.</p>
+			</div>
+		{:else}
+			<div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite">
+				{#each articles as entry (entry.id)}
+					<ArticleCard article={entry} author={entry.author ?? fallbackAuthor} />
+				{/each}
+			</div>
+		{/if}
 
-	{#if isLoading}
-		<div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite" aria-busy="true">
-			{#each Array.from({ length: 6 }, (_, index) => index) as item (item)}
-				<article
-					class="flex flex-col gap-4 overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+		{#if pagination.totalPages > 1}
+			<div class="flex items-center justify-center gap-2 pt-2">
+				<button
+					type="button"
+					onclick={goToPrev}
+					class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+					disabled={!pagination.hasPrev}
+					aria-label="Previous page"
 				>
-					<div class="h-40 w-full rounded-lg bg-gray-200"></div>
-					<div class="space-y-3">
-						<div class="h-4 w-3/4 rounded bg-gray-200"></div>
-						<div class="h-3 w-full rounded bg-gray-200"></div>
-						<div class="h-3 w-5/6 rounded bg-gray-200"></div>
-					</div>
-					<div class="flex gap-3">
-						<div class="h-6 w-16 rounded-full bg-gray-200"></div>
-						<div class="h-6 w-16 rounded-full bg-gray-200"></div>
-					</div>
-					<div class="mt-auto flex items-center justify-between">
-						<div class="h-3 w-24 rounded bg-gray-200"></div>
-						<div class="h-9 w-28 rounded bg-gray-200"></div>
-					</div>
-				</article>
-			{/each}
-		</div>
-	{:else if !showError && articles.length === 0}
-		<div
-			class="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center shadow-sm"
-		>
-			<svg
-				aria-hidden="true"
-				class="h-12 w-12 text-gray-300"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.5"
-				viewBox="0 0 24 24"
-			>
-				<path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h7" />
-			</svg>
-			<div>
-				<h2 class="text-lg font-semibold">No articles match your filters yet</h2>
-				<p class="mt-2 text-sm text-gray-600">Try adjusting your search.</p>
+					<PreviousIcon size={16} />
+				</button>
+
+				<div class="flex items-center">
+					<span
+						class="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+					>
+						Page {pagination.page} of {pagination.totalPages}
+					</span>
+				</div>
+
+				<button
+					type="button"
+					onclick={goToNext}
+					class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+					disabled={!pagination.hasNext}
+					aria-label="Next page"
+				>
+					<NextIcon size={16} />
+				</button>
 			</div>
-		</div>
-	{:else}
-		<div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite" aria-busy={isLoading}>
-			{#each articles as entry (entry.id)}
-				<ArticleCard article={entry} author={entry.author ?? fallbackAuthor} />
-			{/each}
-		</div>
-	{/if}
-
-	{#if !isLoading && pagination().totalPages > 1}
-		<div class="flex items-center justify-center gap-2">
-			<button
-				type="button"
-				onclick={goToPrev}
-				class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:z-20 disabled:cursor-not-allowed disabled:opacity-50"
-				disabled={!pagination().hasPrev}
-				aria-label="Previous page"
-			>
-				<PreviousIcon size={16} />
-			</button>
-
-			<div class="flex items-center">
-				<span class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700">
-					Page {pagination().page} of {pagination().totalPages}
-				</span>
-			</div>
-
-			<button
-				type="button"
-				onclick={goToNext}
-				class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:z-20 disabled:cursor-not-allowed disabled:opacity-50"
-				disabled={!pagination().hasNext}
-				aria-label="Next page"
-			>
-				<NextIcon size={16} />
-			</button>
-		</div>
-	{/if}
-</section>
+		{/if}
+	</section>
+</div>
