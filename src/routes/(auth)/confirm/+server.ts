@@ -3,21 +3,28 @@ import type { EmailOtpType } from '@supabase/supabase-js';
 
 export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
 	const token_hash = url.searchParams.get('token_hash');
+	const code = url.searchParams.get('code');
 	const type = (url.searchParams.get('type') ?? 'email') as EmailOtpType;
-	const next = url.searchParams.get('next') ?? '/dashboard';
+	const requestedNext = url.searchParams.get('next');
+	const next = requestedNext?.startsWith('/') && !requestedNext.startsWith('//')
+		? requestedNext
+		: '/dashboard';
 
-	if (!token_hash) redirect(303, '/auth/error');
+	let authError = null;
 
-	const { error } = await supabase.auth.verifyOtp({ token_hash, type });
-  
-	if (error) {
-		const reason = error.code ?? 'unknown';
+	if (code) {
+		const { error } = await supabase.auth.exchangeCodeForSession(code);
+		authError = error;
+	} else if (token_hash) {
+		const { error } = await supabase.auth.verifyOtp({ token_hash, type });
+		authError = error;
+	} else {
+		redirect(303, '/login?error=invalid');
+	}
 
-		const safeReason = ['otp_expired', 'invalid_grant', 'token_not_found'].includes(reason)
-			? reason
-			: 'unknown';
-
-		redirect(303, `/auth/error?reason=${safeReason}`);
+	if (authError) {
+		const reason = authError.code === 'otp_expired' ? 'expired' : 'invalid';
+		redirect(303, `/login?error=${reason}`);
 	}
 
 	redirect(303, next);
