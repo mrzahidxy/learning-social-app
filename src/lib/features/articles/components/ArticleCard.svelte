@@ -21,9 +21,9 @@
 </script>
 
 <div
-	class="group flex h-full flex-col gap-3 overflow-hidden rounded-lg border border-gray-300 bg-white p-4 shadow-sm transition-all hover:border-blue-400 hover:shadow-md"
+	class="group flex h-full flex-col gap-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg"
 >
-	<a href={articleLink()} class="aspect-video overflow-hidden rounded-md">
+	<a href={articleLink()} class="aspect-video overflow-hidden rounded-xl bg-slate-100">
 		<img
 			src={article.imageUrl || fallbackCoverImage}
 			onerror={handleCoverImageError}
@@ -39,20 +39,20 @@
 	<div class="flex flex-1 flex-col gap-2">
 		<a
 			href={articleLink()}
-			class="line-clamp-2 text-base font-semibold text-gray-900 group-hover:text-blue-600"
+			class="line-clamp-2 text-lg font-semibold text-slate-900 transition-colors group-hover:text-blue-600"
 		>
 			{article.title}
 		</a>
 
-		<p class="line-clamp-2 flex-1 text-xs text-gray-600">
+		<p class="line-clamp-2 flex-1 text-sm text-slate-600">
 			content={article?.content ? article.content.substring(0, 160) + '...' : ''}
 		</p>
 
-		<div class="flex items-center justify-between pt-1">
+		<div class="flex items-center justify-between pt-2">
 			<div class="flex items-center gap-2">
 				<a href={authorLink()}>
 					<img
-						class="h-7 w-7 rounded-full object-cover"
+						class="h-8 w-8 rounded-full object-cover ring-2 ring-white"
 						src={author.profileImage || fallbackAuthorImage}
 						onerror={handleAuthorImageError}
 						alt={author.displayName}
@@ -63,7 +63,7 @@
 					/>
 				</a>
 				<div>
-					<a href={authorLink()} class="text-xs font-medium text-gray-900 hover:text-blue-600">
+					<a href={authorLink()} class="text-xs font-medium text-slate-900 hover:text-blue-600">
 						{author.displayName}
 					</a>
 				</div>

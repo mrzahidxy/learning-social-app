@@ -18,7 +18,7 @@
 	let isSubmitting = $state(false);
 	let mode = $state<'view' | 'edit'>('view');
 
-	let uploader: (SvelteComponent & { clearSelection?: () => void }) | null = null;
+	let uploader = $state<(SvelteComponent & { clearSelection?: () => void }) | null>(null);
 
 	const canSubmit = $derived(displayName.trim().length > 0 && !isSubmitting);
 

@@ -18,6 +18,6 @@
 	});
 </script>
 
-<Navbar {user} {profile} />
+<Navbar {user} {profile} {supabase} />
 
 {@render children()}
