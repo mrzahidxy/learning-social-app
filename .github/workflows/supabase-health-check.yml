@@ -1,0 +1,59 @@
+name: Supabase Health Check
+
+on:
+  schedule:
+    # Runs three times daily at 00:17, 08:17, and 16:17 UTC.
+    - cron: "17 0,8,16 * * *"
+
+  # Allows manual execution from the GitHub Actions page.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-health-check
+  cancel-in-progress: true
+
+jobs:
+  check-database:
+    name: Check Supabase database
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Call database health-check RPC
+        env:
+          SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          : "${SUPABASE_URL:?Missing PUBLIC_SUPABASE_URL secret}"
+          : "${SUPABASE_ANON_KEY:?Missing PUBLIC_SUPABASE_ANON_KEY secret}"
+
+          response="$(
+            curl \
+              --request POST \
+              --fail \
+              --silent \
+              --show-error \
+              --connect-timeout 5 \
+              --max-time 15 \
+              --retry 2 \
+              --retry-delay 5 \
+              --retry-all-errors \
+              --header "apikey: ${SUPABASE_ANON_KEY}" \
+              --header "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+              --header "Content-Type: application/json" \
+              --data '{}' \
+              "${SUPABASE_URL}/rest/v1/rpc/health_check"
+          )"
+
+          jq -e '
+            .status == "ok" and
+            (.checked_at | type == "string")
+          ' <<< "${response}" > /dev/null
+
+          echo "Supabase database health check passed."
