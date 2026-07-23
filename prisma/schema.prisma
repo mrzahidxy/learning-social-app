@@ -8,7 +8,6 @@ datasource db {
   url          = env("DATABASE_URL")
   directUrl    = env("DIRECT_URL")
   schemas      = ["public"]
-  relationMode = "prisma"
 }
 
 enum Role {
@@ -28,6 +27,9 @@ model Profile {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   articles     Article[]
+  notifications Notification[]
+  following    Subscription[] @relation("SubscriptionFollower")
+  followers    Subscription[] @relation("SubscriptionAuthor")
 
   @@index([userId])
   @@schema("public")
@@ -36,13 +38,14 @@ model Profile {
 model Article {
   id           String   @id @default(uuid()) @db.Uuid
   authorUserId String   @db.Uuid
-  author       Profile  @relation(fields: [authorUserId], references: [userId])
+  author       Profile  @relation(fields: [authorUserId], references: [userId], onDelete: Cascade)
   title        String
   content      String
   imageUrl     String?
   published    Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  notifications Notification[]
 
   @@index([authorUserId])
   @@index([published])
@@ -50,16 +53,20 @@ model Article {
 }
 
 model Notification {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  articleId String   @db.Uuid
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  articleId String           @db.Uuid
+  type      NotificationType
   message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  user      Profile          @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  article   Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@index([userId, read, createdAt])
   @@index([articleId])
+  @@unique([userId, articleId, type])
   @@schema("public")
 }
 
@@ -69,8 +76,17 @@ model Subscription {
   authorUserId String   @db.Uuid
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  user         Profile  @relation("SubscriptionFollower", fields: [userId], references: [userId], onDelete: Cascade)
+  author       Profile  @relation("SubscriptionAuthor", fields: [authorUserId], references: [userId], onDelete: Cascade)
 
   @@unique([userId, authorUserId])
   @@index([userId])
+  @@index([authorUserId])
+  @@schema("public")
+}
+
+enum NotificationType {
+  ARTICLE_PUBLISHED
+
   @@schema("public")
 }

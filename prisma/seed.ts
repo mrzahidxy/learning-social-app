@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { NotificationType, PrismaClient, Role } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -28,7 +28,7 @@ Supabase handles authentication without forcing the app to manage passwords. The
 Prisma gives the app a readable data layer. Profiles, articles, subscriptions, and notifications are small models, but together they create a useful social learning experience. A reader can follow an author, an author can publish lessons, and the home feed can show content based on those relationships. This is enough structure to test real product behavior without building a complex system too early.
 
 The most important lesson is to keep the first version understandable. Use meaningful seed data, predictable user roles, and realistic article content. Then test the normal path, the empty state, and the permission rules. Once those basics feel reliable, the platform can grow with comments, bookmarks, richer notifications, and better author analytics.`,
-	emptyStates: `Empty states are part of the product experience, not a place to hide missing data. A learner who opens a page with no articles, no followed authors, or no notifications should still understand what happened and what they can do next. A short message such as “No articles found” is technically correct, but it does not teach the user anything useful.
+	emptyStates: `Empty states are part of the product experience, not a place to hide missing data. A learner who opens a page with no articles, no followed authors, or no notifications should still understand what happened and what they can do next. A short message such as "No articles found" is technically correct, but it does not teach the user anything useful.
 
 A better empty state has three parts. First, it names the situation clearly. Second, it explains why the page may be empty. Third, it gives the user one practical action. For example, a flows tab can say that articles will appear after the reader follows authors. An author page can explain that the author has not published lessons yet. A profile page can invite the user to complete their name, bio, and role request.
 
@@ -43,7 +43,7 @@ Use one main heading, then divide the lesson into short sections. Each section s
 
 Lists are useful for checklists, setup steps, and review points. Links should support the article rather than distract from it. If you reference documentation, tell the reader why the link matters. Images should add meaning, not simply fill space.
 
-End every article with a next step. It can be a small exercise, a file to edit, or a question to explore. Learners remember more when they apply the idea immediately. A strong markdown article is not only formatted well; it respects the reader’s time, explains the path clearly, and leaves them confident enough to continue.`,
+End every article with a next step. It can be a small exercise, a file to edit, or a question to explore. Learners remember more when they apply the idea immediately. A strong markdown article is not only formatted well; it respects the reader's time, explains the path clearly, and leaves them confident enough to continue.`,
 	databaseDraft: `Safe database changes begin before anyone runs a migration. The first step is to describe the product change in plain language. If the team understands why a new field, table, or relationship is needed, the schema design becomes easier to review. For Pathshala, examples include adding article drafts, storing profile images, or tracking subscriptions between readers and authors.
 
 After the goal is clear, update the Prisma schema carefully. Names should match the language used in the app. A field called published is easier to understand than a vague status flag when the only choices are public or draft. Indexes should support real queries, such as finding articles by author or loading unread notifications for a user.
@@ -75,29 +75,99 @@ async function main() {
 
 	await prisma.profile.createMany({
 		data: [
-			{ userId: users.arif, role: Role.READER, displayName: 'Arif Rahman', bio: 'Frontend learner following practical SvelteKit and Supabase lessons.', profileImage: '/images/placeholder-avatar.svg' },
-			{ userId: users.nusrat, role: Role.READER, displayName: 'Nusrat Jahan', bio: 'New reader exploring Pathshala before following any authors.' },
-			{ userId: users.farhana, role: Role.READER, displayName: 'Farhana Islam', bio: 'Active reader learning backend workflows and project planning.' },
+			{
+				userId: users.arif,
+				role: Role.READER,
+				displayName: 'Arif Rahman',
+				bio: 'Frontend learner following practical SvelteKit and Supabase lessons.',
+				profileImage: '/images/placeholder-avatar.svg'
+			},
+			{
+				userId: users.nusrat,
+				role: Role.READER,
+				displayName: 'Nusrat Jahan',
+				bio: 'New reader exploring Pathshala before following any authors.'
+			},
+			{
+				userId: users.farhana,
+				role: Role.READER,
+				displayName: 'Farhana Islam',
+				bio: 'Active reader learning backend workflows and project planning.'
+			},
 			{
 				userId: users.tanjila,
 				role: Role.AUTHOR,
 				displayName: 'Tanjila Akter',
 				bio: 'Writes clear lessons about SvelteKit, Supabase Auth, Prisma, and user experience.',
-				profileImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=256&h=256&fit=crop&crop=face'
+				profileImage:
+					'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=256&h=256&fit=crop&crop=face'
 			},
-			{ userId: users.hasan, role: Role.AUTHOR, displayName: 'Hasan Mahmud', bio: 'Prepares backend, database, and moderation guides for project-based learners.' },
-			{ userId: users.admin, role: Role.ADMIN, displayName: 'Sabbir Ahmed', bio: 'Platform moderator managing roles, article reviews, and publishing controls.', profileImage: '/images/placeholder-avatar.svg' }
+			{
+				userId: users.hasan,
+				role: Role.AUTHOR,
+				displayName: 'Hasan Mahmud',
+				bio: 'Prepares backend, database, and moderation guides for project-based learners.'
+			},
+			{
+				userId: users.admin,
+				role: Role.ADMIN,
+				displayName: 'Sabbir Ahmed',
+				bio: 'Platform moderator managing roles, article reviews, and publishing controls.',
+				profileImage: '/images/placeholder-avatar.svg'
+			}
 		]
 	});
 
 	await prisma.article.createMany({
 		data: [
-			{ id: articles.svelteSupabase, authorUserId: users.tanjila, title: 'Build a Learning App with SvelteKit and Supabase', content: content.svelteSupabase, imageUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200&h=675&fit=crop', published: true },
-			{ id: articles.emptyStates, authorUserId: users.tanjila, title: 'Design Better Empty States for Learners', content: content.emptyStates, published: true },
-			{ id: articles.markdownGuide, authorUserId: users.tanjila, title: 'Markdown Checklist for New Authors', content: content.markdownGuide, imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&h=675&fit=crop', published: true },
-			{ id: articles.databaseDraft, authorUserId: users.hasan, title: 'Draft: Plan Safe Database Changes', content: content.databaseDraft, imageUrl: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&h=675&fit=crop', published: false },
-			{ id: articles.reviewDraft, authorUserId: users.hasan, title: 'Draft: Article Review Workflow', content: content.reviewDraft, published: false },
-			{ id: articles.guidelines, authorUserId: users.admin, title: 'Community Guidelines for Helpful Learning Articles', content: content.guidelines, published: true }
+			{
+				id: articles.svelteSupabase,
+				authorUserId: users.tanjila,
+				title: 'Build a Learning App with SvelteKit and Supabase',
+				content: content.svelteSupabase,
+				imageUrl:
+					'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200&h=675&fit=crop',
+				published: true
+			},
+			{
+				id: articles.emptyStates,
+				authorUserId: users.tanjila,
+				title: 'Design Better Empty States for Learners',
+				content: content.emptyStates,
+				published: true
+			},
+			{
+				id: articles.markdownGuide,
+				authorUserId: users.tanjila,
+				title: 'Markdown Checklist for New Authors',
+				content: content.markdownGuide,
+				imageUrl:
+					'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&h=675&fit=crop',
+				published: true
+			},
+			{
+				id: articles.databaseDraft,
+				authorUserId: users.hasan,
+				title: 'Draft: Plan Safe Database Changes',
+				content: content.databaseDraft,
+				imageUrl:
+					'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&h=675&fit=crop',
+				published: false
+			},
+			{
+				id: articles.reviewDraft,
+				authorUserId: users.hasan,
+				title: 'Draft: Article Review Workflow',
+				content: content.reviewDraft,
+				published: false
+			},
+			{
+				id: articles.guidelines,
+				authorUserId: users.admin,
+				title: 'Community Guidelines for Helpful Learning Articles',
+				content: content.guidelines,
+				published: true
+			}
 		]
 	});
 
@@ -111,13 +181,31 @@ async function main() {
 
 	await prisma.notification.createMany({
 		data: [
-			{ userId: users.arif, articleId: articles.markdownGuide, message: 'Tanjila Akter published a new markdown checklist for authors.', read: false },
-			{ userId: users.arif, articleId: articles.svelteSupabase, message: 'You read Tanjila Akter’s guide on SvelteKit and Supabase.', read: true },
-			{ userId: users.admin, articleId: articles.databaseDraft, message: 'Hasan Mahmud submitted a database draft for review.', read: false }
+			{
+				userId: users.arif,
+				articleId: articles.markdownGuide,
+				type: NotificationType.ARTICLE_PUBLISHED,
+				message: 'Tanjila Akter published "Markdown Checklist for New Authors".',
+				read: false
+			},
+			{
+				userId: users.arif,
+				articleId: articles.svelteSupabase,
+				type: NotificationType.ARTICLE_PUBLISHED,
+				message: 'Tanjila Akter published "Build a Learning App with SvelteKit and Supabase".',
+				read: true
+			},
+			{
+				userId: users.admin,
+				articleId: articles.guidelines,
+				type: NotificationType.ARTICLE_PUBLISHED,
+				message: 'Sabbir Ahmed published "Community Guidelines for Helpful Learning Articles".',
+				read: false
+			}
 		]
 	});
 
-	console.log('Seed complete: 3 users, 2 authors, 1 admin, 6 long blog posts.');
+	console.log('Seed complete: 3 reader users, 2 authors, 1 admin, and 6 articles.');
 }
 
 main()
