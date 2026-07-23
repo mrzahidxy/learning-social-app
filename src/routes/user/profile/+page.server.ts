@@ -1,17 +1,14 @@
-import { fail } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import prisma from '$lib/server/prisma';
-import { ensureRole } from '$lib/features/user/utils/ensureRole';
+import { requireUser } from '$lib/server/auth/authorization';
+import { parseProfileForm, updateOwnProfile } from '$lib/server/auth/profile';
 import type { Actions, PageServerLoad } from './$types';
-import type { Role } from '@prisma/client';
-
-const sanitize = (value: string | null) => value?.trim() ?? '';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const userId = locals.user?.id ?? null;
-	await ensureRole(userId, 'READER');
+	const userId = requireUser(locals.user?.id ?? null);
 
 	const profile = await prisma.profile.findUnique({
-		where: { userId: userId! },
+		where: { userId },
 		select: {
 			displayName: true,
 			bio: true,
@@ -20,44 +17,26 @@ export const load: PageServerLoad = async ({ locals }) => {
 		}
 	});
 
+	if (!profile) {
+		throw error(404, 'Profile not found');
+	}
+
 	return {
-		profile: profile ?? null
+		profile
 	};
 };
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
-		const userId = locals.user?.id ?? null;
-		await ensureRole(userId, 'READER');
+		const userId = requireUser(locals.user?.id ?? null);
 
 		const formData = await request.formData();
-		const displayName = sanitize(formData.get('displayName') as string | null);
-		const bio = sanitize(formData.get('bio') as string | null);
-		const profileImageUrl = sanitize(formData.get('profileImageUrl') as string | null);
-		const requestedRoleInput = sanitize(formData.get('requestedRole') as string | null).toUpperCase();
-
-		if (!displayName) {
-			return fail(400, { formError: 'Display name is required', field: 'displayName' });
+		const parsed = parseProfileForm(formData);
+		if (!parsed.data) {
+			return fail(400, parsed);
 		}
 
-		const requestedRole: Role = requestedRoleInput === 'AUTHOR' ? 'AUTHOR' : 'READER';
-
-		const profile = await prisma.profile.upsert({
-			where: { userId: userId! },
-			update: {
-				displayName,
-				bio: bio || null,
-				profileImage: profileImageUrl || null,
-				role: requestedRole
-			},
-			create: {
-				userId: userId!,
-				displayName,
-				bio: bio || null,
-				profileImage: profileImageUrl || null,
-				role: requestedRole
-			}
-		});
+		const profile = await updateOwnProfile(userId, parsed.data);
 
 		return {
 			profile: {
@@ -65,7 +44,8 @@ export const actions: Actions = {
 				bio: profile.bio,
 				role: profile.role,
 				profileImage: profile.profileImage
-			}
+			},
+			values: parsed.values
 		};
 	}
 };

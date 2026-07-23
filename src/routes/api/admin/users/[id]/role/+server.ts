@@ -1,37 +1,71 @@
-import { error, json } from '@sveltejs/kit';
+import type { Role } from '@prisma/client';
 import prisma from '$lib/server/prisma';
+import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { requireAdmin } from '$lib/server/auth/authorization';
+import { isValidRole } from '$lib/server/auth/profile';
 
-const ROLES = ['READER', 'AUTHOR', 'ADMIN'] as const;
+const UUID_PATTERN =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export const POST: RequestHandler = async ({ params, request, locals }) => {
-	const { user } = locals;
-	if (!user) throw error(401, 'Unauthorized');
+const parseRole = (value: unknown): Role => {
+	if (!isValidRole(value)) {
+		throw error(400, 'Invalid role');
+	}
 
-	const actor = await prisma.profile.findUnique({
-		where: { userId: user.id },
-		select: { role: true }
-	});
-	if (actor?.role !== 'ADMIN') throw error(403, 'Forbidden');
+	return value;
+};
 
-	const body = await request.json();
-	if (!ROLES.includes(body.role)) throw error(400, 'Invalid role');
+const parseUserId = (value: string) => {
+	if (!UUID_PATTERN.test(value)) {
+		throw error(400, 'Invalid user ID');
+	}
+
+	return value;
+};
+
+export const PATCH: RequestHandler = async ({ params, request, locals }) => {
+	const actor = await requireAdmin(locals.user?.id ?? null);
+	const targetUserId = parseUserId(params.id);
+
+	let body: { role?: unknown };
+
+	try {
+		body = (await request.json()) as { role?: unknown };
+	} catch {
+		throw error(400, 'Request body must be valid JSON');
+	}
+
+	const nextRole = parseRole(body.role);
 
 	const targetProfile = await prisma.profile.findUnique({
-		where: { userId: params.id }
+		where: { userId: targetUserId },
+		select: { userId: true, role: true }
 	});
 
-	const updated = await prisma.profile.upsert({
-		where: { userId: params.id },
-		create: {
-			userId: params.id,
-			role: body.role,
-			displayName: targetProfile?.displayName ?? null,
-			bio: targetProfile?.bio ?? null,
-			profileImage: targetProfile?.profileImage ?? null
-		},
-		update: { role: body.role }
+	if (!targetProfile) {
+		throw error(404, 'Profile not found');
+	}
+
+	if (targetProfile.role === nextRole) {
+		return json({ userId: targetProfile.userId, role: targetProfile.role });
+	}
+
+	if (actor.userId === targetUserId && targetProfile.role === 'ADMIN' && nextRole !== 'ADMIN') {
+		const adminCount = await prisma.profile.count({
+			where: { role: 'ADMIN' }
+		});
+
+		if (adminCount <= 1) {
+			throw error(403, 'Cannot remove the final remaining admin');
+		}
+	}
+
+	const updated = await prisma.profile.update({
+		where: { userId: targetUserId },
+		data: { role: nextRole },
+		select: { userId: true, role: true }
 	});
 
-	return json({ role: updated.role });
+	return json(updated);
 };

@@ -3,7 +3,18 @@
   import { goto } from '$app/navigation';
   import type { Role } from '@prisma/client';
 
-  export let data;
+  type UserRow = {
+    userId: string;
+    displayName: string | null;
+    role: Role;
+    updatedAt: string;
+  };
+
+  export let data: {
+    users: UserRow[];
+    search: string;
+    pagination: { page: number; pageSize: number; total: number };
+  };
   const roles = ['READER', 'AUTHOR', 'ADMIN'] as const;
 
   let users = structuredClone(data.users);
@@ -23,7 +34,7 @@
     pending.add(userId);
     errorMap.delete(userId);
 
-    const original = users.find((u) => u.userId === userId);
+    const original = users.find((u: UserRow) => u.userId === userId);
     if (!original) return;
 
     const previousRole = original.role;
@@ -31,7 +42,7 @@
 
     try {
       const res = await fetch(`/api/admin/users/${userId}/role`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ role: nextRole })
       });

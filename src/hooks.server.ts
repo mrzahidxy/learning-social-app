@@ -1,9 +1,14 @@
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Handle } from '@sveltejs/kit';
+import { redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import prisma from '$lib/server/prisma';
+import {
+	PROFILE_SETUP_PATH,
+	provisionProfile,
+	shouldBypassProfileSetupRedirect,
+	isProfileComplete
+} from '$lib/server/auth/profile';
 
 const withSupabase: Handle = async ({ event, resolve }) => {
 	event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
@@ -48,20 +53,26 @@ const attachAuth: Handle = async ({ event, resolve }) => {
 	event.locals.profile = null;
 
 	if (user?.id) {
+		let profile = null;
+
 		try {
-			const profile = await prisma.profile.findUnique({
-				where: { userId: user.id },
-				select: { displayName: true, role: true, profileImage: true }
-			});
-			if (profile) {
-				event.locals.profile = {
-					displayName: profile.displayName ?? null,
-					role: profile.role ?? null,
-					profileImage: profile.profileImage ?? null
-				};
-			}
+			profile = await provisionProfile(user.id);
+			event.locals.profile = {
+				displayName: profile.displayName ?? null,
+				role: profile.role ?? null,
+				profileImage: profile.profileImage ?? null,
+				isComplete: isProfileComplete(profile)
+			};
 		} catch (err) {
 			console.error('Failed to load profile', err);
+		}
+
+		if (
+			profile &&
+			!isProfileComplete(profile) &&
+			!shouldBypassProfileSetupRedirect(event.url.pathname)
+		) {
+			throw redirect(303, PROFILE_SETUP_PATH);
 		}
 	}
 

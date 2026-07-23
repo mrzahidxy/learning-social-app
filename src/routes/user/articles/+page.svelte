@@ -108,7 +108,7 @@
 			<button
 				class="inline-flex cursor-pointer items-center rounded-full border border-blue-600 px-3 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
 				type="button"
-				onclick={() => goto('/author/articles/create')}
+				onclick={() => goto('/user/articles/create')}
 			>
 				Create article
 			</button>
@@ -204,7 +204,7 @@
 					aria-disabled={data.pagination.page <= 1}
 					href={data.pagination.page <= 1
 						? '#'
-						: `/author/articles?${new URLSearchParams({
+						: `/user/articles?${new URLSearchParams({
 								...(searchTerm.trim() ? { q: searchTerm.trim() } : {}),
 								...(statusFilter !== 'all' ? { status: statusFilter } : {}),
 								page: String(data.pagination.page - 1)
@@ -218,7 +218,7 @@
 						Math.ceil(data.pagination.total / data.pagination.pageSize)}
 					href={data.pagination.page >= Math.ceil(data.pagination.total / data.pagination.pageSize)
 						? '#'
-						: `/author/articles?${new URLSearchParams({
+						: `/user/articles?${new URLSearchParams({
 								...(searchTerm.trim() ? { q: searchTerm.trim() } : {}),
 								...(statusFilter !== 'all' ? { status: statusFilter } : {}),
 								page: String(data.pagination.page + 1)

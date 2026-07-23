@@ -2,15 +2,13 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getSupabaseAdmin } from '$lib/server/supabaseAdmin';
 import { v4 as uuidv4 } from 'uuid';
+import { requireRole, requireUser } from '$lib/server/auth/authorization';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		const { fileName, contentType, bucket } = await request.json();
-
-		// Check if user is authenticated
-		if (!locals.user) {
-			throw error(401, 'Unauthorized');
-		}
+		const userId = requireUser(locals.user?.id ?? null);
+		await requireRole(userId, ['READER', 'AUTHOR', 'ADMIN']);
 
 		const supabaseAdmin = getSupabaseAdmin();
 

@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { PUBLIC_ROUTES } from '$lib/features/auth/constants/auth';
-import prisma from '$lib/server/prisma';
+import { requireUser } from '$lib/server/auth/authorization';
 
 export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 	const isPublic = PUBLIC_ROUTES.some((rx) => rx.test(url.pathname));
@@ -10,10 +10,13 @@ export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 	if (!session && !isPublic) {
 		throw redirect(303, `/login`);
 	}
+	requireUser(user?.id);
 
-	const profile = user?.id
-		? await prisma.profile.findUnique({ where: { userId: user.id }, select: { role: true } })
-		: null;
-
-	return { session, user, cookies: cookies.getAll(), role: profile?.role ?? null };
+	return {
+		session,
+		user,
+		cookies: cookies.getAll(),
+		role: locals.profile?.role ?? null,
+		profile: locals.profile
+	};
 };

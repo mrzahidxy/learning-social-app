@@ -15,6 +15,7 @@ declare global {
 				displayName: string | null;
 				role: Role | null;
 				profileImage: string | null;
+				isComplete: boolean;
 			} | null;
 		}
 		interface PageData {

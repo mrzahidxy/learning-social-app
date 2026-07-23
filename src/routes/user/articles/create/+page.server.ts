@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import prisma from '$lib/server/prisma';
-import { ensureRole } from '$lib/features/user/utils/ensureRole';
+import { requireAuthor } from '$lib/server/auth/authorization';
 
 const sanitizeText = (value: string | null) => value?.trim() ?? '';
 const validateBoolean = (value: string | null) =>
@@ -30,7 +30,7 @@ const validateForm = (title: string, content: string) => {
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
 		const userId = locals.user?.id ?? null;
-		await ensureRole(userId, 'AUTHOR');
+		await requireAuthor(userId);
 
 		const formData = await request.formData();
 		const title = sanitizeText(formData.get('title') as string | null);

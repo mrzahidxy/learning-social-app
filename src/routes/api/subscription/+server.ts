@@ -2,18 +2,12 @@
 import prisma from '$lib/server/prisma';
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { requireRole, requireUser } from '$lib/server/auth/authorization';
 
-type AuthenticatedUser = NonNullable<App.Locals['user']>;
 const UUID_PATTERN =
 	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const ok = <T>(data: T, status = 200) => json({ status: 'ok', data }, { status });
-
-const requireUser = (locals: App.Locals): AuthenticatedUser => {
-	const user = locals.user;
-	if (!user?.id) throw error(401, 'Unauthorized');
-	return user;
-};
 
 const parseAuthorUserId = (value: unknown) => {
 	if (!value || typeof value !== 'string') throw error(400, 'authorUserId is required');
@@ -38,17 +32,18 @@ const readAuthorFromBody = async (request: Request) => {
  * Creates a subscription. Duplicate calls are treated as success (idempotent).
  */
 export const POST: RequestHandler = async (event) => {
-	const user = requireUser(event.locals);
+	const userId = requireUser(event.locals.user?.id ?? null);
+	await requireRole(userId, ['READER', 'AUTHOR', 'ADMIN']);
 	const authorUserId = await readAuthorFromBody(event.request);
 
-	if (authorUserId === user.id) {
+	if (authorUserId === userId) {
 		throw error(400, 'You cannot subscribe to yourself');
 	}
 
 	try {
 		const subscription = await prisma.subscription.upsert({
-			where: { userId_authorUserId: { userId: user.id, authorUserId } },
-			create: { userId: user.id, authorUserId },
+			where: { userId_authorUserId: { userId, authorUserId } },
+			create: { userId, authorUserId },
 			update: {}
 		});
 
@@ -58,7 +53,7 @@ export const POST: RequestHandler = async (event) => {
 			authorUserId: subscription.authorUserId
 		});
 	} catch (err) {
-		console.error('Failed to create subscription', { userId: user.id, authorUserId, err });
+		console.error('Failed to create subscription', { userId, authorUserId, err });
 		throw error(500, 'Unable to create subscription');
 	}
 };
@@ -71,16 +66,17 @@ export const POST: RequestHandler = async (event) => {
  * If it doesn't exist, still returns 204 (idempotent).
  */
 export const DELETE: RequestHandler = async (event) => {
-	const user = requireUser(event.locals);
+	const userId = requireUser(event.locals.user?.id ?? null);
+	await requireRole(userId, ['READER', 'AUTHOR', 'ADMIN']);
 	const authorUserId = await readAuthorFromBody(event.request);
 
 	try {
 		await prisma.subscription.deleteMany({
-			where: { userId: user.id, authorUserId }
+			where: { userId, authorUserId }
 		});
 		return new Response(null, { status: 204 });
 	} catch (err) {
-		console.error('Failed to remove subscription', { userId: user.id, authorUserId, err });
+		console.error('Failed to remove subscription', { userId, authorUserId, err });
 		throw error(500, 'Unable to remove subscription');
 	}
 };
@@ -91,19 +87,20 @@ export const DELETE: RequestHandler = async (event) => {
  * Returns whether the current user is subscribed to the given author.
  */
 export const GET: RequestHandler = async (event) => {
-	const user = requireUser(event.locals);
+	const userId = requireUser(event.locals.user?.id ?? null);
+	await requireRole(userId, ['READER', 'AUTHOR', 'ADMIN']);
 	const url = new URL(event.request.url);
 	const authorUserId = parseAuthorUserId(url.searchParams.get('authorUserId'));
 
 	try {
 		const subscription = await prisma.subscription.findUnique({
-			where: { userId_authorUserId: { userId: user.id, authorUserId } },
+			where: { userId_authorUserId: { userId, authorUserId } },
 			select: { id: true }
 		});
 
 		return ok({ isSubscribed: Boolean(subscription) });
 	} catch (err) {
-		console.error('Failed to load subscription status', { userId: user.id, authorUserId, err });
+		console.error('Failed to load subscription status', { userId, authorUserId, err });
 		throw error(500, 'Unable to fetch subscription status');
 	}
 };

@@ -1,11 +1,14 @@
  import type { Prisma } from '@prisma/client';
 import prisma from '$lib/server/prisma';
 import type { PageServerLoad } from './$types';
+import { requireAuthor } from '$lib/server/auth/authorization';
 
 
 const PAGE_SIZE = 10;
 
 export const load: PageServerLoad = async ({ locals, url }) => {
+	await requireAuthor(locals.user?.id ?? null);
+
 	const searchParams = url.searchParams;
 	const page = Math.max(Number.parseInt(searchParams.get('page') ?? '1', 10) || 1, 1);
 	const search = searchParams.get('q')?.trim() ?? '';
@@ -48,7 +51,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	]);
 
 	return {
-		articles: articles.map((article) => ({
+		articles: articles.map((article: (typeof articles)[number]) => ({
 			...article,
 			author: article.author ?? null
 		})),
