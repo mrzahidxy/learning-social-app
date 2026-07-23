@@ -49,7 +49,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	]);
 
 	return {
-		articles: articles.map((article) => ({
+		articles: articles.map((article: (typeof articles)[number]) => ({
 			...article,
 			author: article.author ?? null
 		})),

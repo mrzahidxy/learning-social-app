@@ -1,50 +1,46 @@
 # Pathshala
 
-Pathshala is a learning platform built with SvelteKit, Prisma, and Supabase. It supports author-led articles, reader subscriptions, and admin moderation.
+Pathshala is a learning/social app built with SvelteKit, Prisma, PostgreSQL, and Supabase.
 
 ## Features
 
-- Supabase magic-link authentication
-- Reader and author roles with profile management
-- Article browsing, author pages, and related content
-- Subscriptions ("flows") to follow authors
-- Admin tools for publishing control
-- Supabase Storage uploads for profile images
+- Authentication
+- Articles
+- Author subscriptions
+- Notifications
 
-## Tech stack
+## Stack
 
-- SvelteKit + Svelte 5
-- Prisma + PostgreSQL
-- Supabase (Auth, Storage)
-- Vite, Playwright, Vitest
+- SvelteKit
+- Svelte 5
+- TypeScript
+- Prisma
+- PostgreSQL
+- Supabase
+- Tailwind CSS
+- Vite
 
-## Getting started
+## Environment
 
-Install dependencies:
+- `PUBLIC_SUPABASE_URL`
+- `PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `DATABASE_URL`
+- `DIRECT_URL`
+
+## Setup
+
+Create `.env` from `.env.example`, then run:
 
 ```sh
 npm install
-```
-
-Create a `.env` file with these variables:
-
-```sh
-PUBLIC_SUPABASE_URL=...
-PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-DATABASE_URL=...
-DIRECT_URL=...
-```
-
-Run the app:
-
-```sh
 npm run dev
 ```
 
 ## Scripts
 
-- `npm run dev` - start the dev server
-- `npm run build` - production build
-- `npm run preview` - preview build
-- `npm run test` - unit + e2e tests
+- `npm run dev`
+- `npm run check`
+- `npm run build`
+- `npm run test`
+- `npm run seed`

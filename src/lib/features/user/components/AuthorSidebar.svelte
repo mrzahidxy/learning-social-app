@@ -13,6 +13,11 @@
 
 	const navItems = [
 		{ label: 'Articles', href: '/user/articles', description: 'Manage content visibility' },
+		{
+			label: 'Notifications',
+			href: '/user/notifications',
+			description: 'Review realtime article updates'
+		},
 		{ label: 'Profile', href: '/user/profile', description: 'Review and update user access' }
 	] satisfies AdminNavItem[];
 
@@ -31,7 +36,9 @@
 		<h2 class="text-lg font-semibold text-gray-900">Author Panel</h2>
 		<div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
 			<p>Manage your community content and members.</p>
-			<span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
+			<span
+				class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700"
+			>
 				{roleLabel}
 			</span>
 		</div>

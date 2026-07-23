@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
 	if (search) {
 		where.OR = [
-			{ title: { contains: search, mode: 'insensitive' } },
+			{ title: { contains: search, mode: 'insensitive' } }
 			// { content: { contains: search, mode: 'insensitive' } }
 		];
 	}
@@ -31,7 +31,9 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 				where: { userId },
 				select: { authorUserId: true }
 			});
-			where.authorUserId = { in: follows.map((follow) => follow.authorUserId) };
+			where.authorUserId = {
+				in: follows.map((follow: { authorUserId: string }) => follow.authorUserId)
+			};
 		}
 	}
 
@@ -65,7 +67,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 			});
 
 	return {
-		articles: articles.map((article) => ({
+		articles: articles.map((article: (typeof articles)[number]) => ({
 			...article,
 			author: article.author ?? null
 		})),

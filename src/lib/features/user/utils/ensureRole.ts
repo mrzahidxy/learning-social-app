@@ -1,5 +1,5 @@
-import prisma from "$lib/server/prisma";
-import { error } from "@sveltejs/kit";
+import prisma from '$lib/server/prisma';
+import { error } from '@sveltejs/kit';
 
 export const ensureRole = async (
 	userId: string | undefined | null,
@@ -19,7 +19,7 @@ export const ensureRole = async (
 	}
 
 	// Define role hierarchy
-	const roleHierarchy = {
+	const roleHierarchy: Record<'READER' | 'AUTHOR' | 'ADMIN', number> = {
 		READER: 1,
 		AUTHOR: 2,
 		ADMIN: 3

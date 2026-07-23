@@ -1,7 +1,6 @@
- import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import prisma from '$lib/server/prisma';
 import type { PageServerLoad } from './$types';
-
 
 const PAGE_SIZE = 10;
 
@@ -48,7 +47,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	]);
 
 	return {
-		articles: articles.map((article) => ({
+		articles: articles.map((article: (typeof articles)[number]) => ({
 			...article,
 			author: article.author ?? null
 		})),
