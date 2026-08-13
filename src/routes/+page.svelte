@@ -96,8 +96,6 @@
 		const end = Math.min(pagination.page * pagination.pageSize, pagination.totalItems);
 		return `Showing ${start}-${end} of ${pagination.totalItems} articles`;
 	};
-
-	$inspect(sortOption);
 </script>
 
 <svelte:head>

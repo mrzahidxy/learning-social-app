@@ -12,11 +12,13 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 	const sort = searchParams.get('sort') === 'latest' ? 'latest' : 'default';
 	const tab = searchParams.get('tab') === 'flows' ? 'flows' : 'home';
 
-	const where: Prisma.ArticleWhereInput = {};
+	const where: Prisma.ArticleWhereInput = {
+		published: true
+	};
 
 	if (search) {
 		where.OR = [
-			{ title: { contains: search, mode: 'insensitive' } },
+			{ title: { contains: search, mode: 'insensitive' } }
 			// { content: { contains: search, mode: 'insensitive' } }
 		];
 	}
@@ -27,7 +29,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 		if (!userId) {
 			flowsAuthRequired = true;
 		} else {
-			const follows = await prisma.subscription.findMany({
+			const follows: Array<{ authorUserId: string }> = await prisma.subscription.findMany({
 				where: { userId },
 				select: { authorUserId: true }
 			});
@@ -65,7 +67,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 			});
 
 	return {
-		articles: articles.map((article) => ({
+		articles: articles.map((article: (typeof articles)[number]) => ({
 			...article,
 			author: article.author ?? null
 		})),
