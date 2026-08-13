@@ -10,7 +10,9 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 	try {
 		await ensureAdmin(locals.user?.id ?? null);
 		isAdmin = true;
-	} catch (error) {}
+	} catch {
+		isAdmin = false;
+	}
 
 	const article = await prisma.article.findUnique({
 		where: { id: params.id },

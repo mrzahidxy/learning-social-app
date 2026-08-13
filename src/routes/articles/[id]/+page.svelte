@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { marked } from 'marked';
-
 	import { handleImageError } from '$lib/shared/utils/common';
 	import ArticleCard from '$lib/features/articles/components/ArticleCard.svelte';
 	import FollowerIcon from '$lib/shared/icons/FollowerIcon.svelte';
@@ -13,35 +11,7 @@
 	const fallbackCoverImage = '/images/placeholder-article.svg';
 	const fallbackAuthorImage = '/images/placeholder-avatar.svg';
 
-	let isLoading = false;
-
-	const handleCoverImageError = (event: Event) => {
-		handleImageError(event, fallbackCoverImage);
-	};
-
-	const handleAuthorImageError = (event: Event) => {
-		handleImageError(event, fallbackAuthorImage);
-	};
-
-	// Convert content paragraphs to HTML
-	const contentHtml = $derived(() => {
-		if (!data?.article?.content) return [];
-
-		const contentArray =
-			typeof data.article.content === 'string'
-				? [data.article.content]
-				: Array.isArray(data.article.content)
-					? data.article.content
-					: [];
-
-		return contentArray.map((paragraph: string) => {
-			if (!paragraph.trim()) {
-				return '';
-			}
-
-			return marked.parse(paragraph);
-		});
-	});
+	const contentHtml = $derived(() => data?.article?.contentHtml ?? '');
 
 	const readTime = $derived(() => {
 		const content = data?.article?.content;
@@ -55,19 +25,14 @@
 	const articleLink = $derived(`/articles/${data?.article?.id ?? ''}`);
 	const shareSupported = $derived(browser && typeof navigator.share === 'function');
 
-	const buildShareUrl = () => {
-		if (!browser) return articleLink;
-		return new URL(articleLink, window.location.origin).toString();
-	};
-
 	const handleShare = async () => {
-		const url = buildShareUrl();
+		const url = browser ? new URL(articleLink, window.location.origin).toString() : articleLink;
 
 		if (shareSupported) {
 			try {
 				await navigator.share({
 					title: data?.article.title,
-					text: data?.article?.content ? data.article.content.substring(0, 160) + '...' : '',
+					text: data?.article?.excerpt ?? '',
 					url
 				});
 				return;
@@ -95,7 +60,6 @@
 	});
 
 	async function toggleFollow() {
-		isLoading = true;
 		try {
 			const method = isFollowing ? 'DELETE' : 'POST';
 			const res = await fetch('/api/subscription', {
@@ -109,18 +73,13 @@
 			isFollowing = method === 'POST';
 		} catch (err) {
 			console.error('Unable to toggle follow', err);
-		} finally {
-			isLoading = false;
 		}
 	}
 </script>
 
 <svelte:head>
 	<title>{data?.article?.title || 'Article'}</title>
-	<meta
-		name="description"
-		content={data?.article?.content ? data.article.content.substring(0, 160) + '...' : ''}
-	/>
+	<meta name="description" content={data?.article?.excerpt ?? ''} />
 </svelte:head>
 
 <PageWrapper paddingX="px-3" paddingY="py-8" class="sm:px-6 lg:px-8">
@@ -140,7 +99,7 @@
 						<img
 							class="h-9 w-9 rounded-full object-cover"
 							src={data?.author.profileImage || fallbackAuthorImage}
-							onerror={handleAuthorImageError}
+							onerror={(event) => handleImageError(event, fallbackAuthorImage)}
 							alt={data?.author.displayName}
 							width="36"
 							height="36"
@@ -172,16 +131,15 @@
 		<div class="mb-8 overflow-hidden rounded-3xl border border-gray-100 bg-slate-100">
 			<img
 				src={data?.article?.imageUrl || fallbackCoverImage}
-				onerror={handleCoverImageError}
+				onerror={(event) => handleImageError(event, fallbackCoverImage)}
 				alt={data?.article?.title || 'Article cover image'}
 				class="h-full w-full object-cover"
 			/>
 		</div>
 
 		<div class="prose prose-lg max-w-none text-gray-700">
-			{#each contentHtml() as paragraph}
-				<div>{@html paragraph}</div>
-			{/each}
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+			<div>{@html contentHtml()}</div>
 		</div>
 
 		<footer class="mt-12 border-t border-gray-200 pt-8">
@@ -193,7 +151,7 @@
 						<img
 							class="h-12 w-12 rounded-2xl object-cover"
 							src={data?.author.profileImage || fallbackAuthorImage}
-							onerror={handleAuthorImageError}
+							onerror={(event) => handleImageError(event, fallbackAuthorImage)}
 							alt={data?.author.displayName}
 							width="48"
 							height="48"

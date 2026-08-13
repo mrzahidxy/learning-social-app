@@ -29,13 +29,20 @@
 		statusFilter = (data.filters.status as 'all' | 'published' | 'draft') ?? 'all';
 	});
 
-	function applyFilters(event: SubmitEvent) {
-		event.preventDefault();
+	const buildArticlesHref = (page?: number) => {
 		const params = new URLSearchParams();
 		const trimmed = searchTerm.trim();
+
 		if (trimmed) params.set('q', trimmed);
 		if (statusFilter !== 'all') params.set('status', statusFilter);
-		goto(`/admin/articles${params.size ? `?${params}` : ''}`);
+		if (page && page > 1) params.set('page', String(page));
+
+		return `/admin/articles${params.size ? `?${params}` : ''}`;
+	};
+
+	function applyFilters(event: SubmitEvent) {
+		event.preventDefault();
+		goto(buildArticlesHref());
 	}
 
 	async function setPublished(articleId: string, nextState: boolean) {
@@ -96,7 +103,7 @@
 				bind:value={statusFilter}
 				name="status"
 			>
-				{#each statuses as option}
+				{#each statuses as option (option.value)}
 					<option value={option.value}>{option.label}</option>
 				{/each}
 			</select>
@@ -182,36 +189,21 @@
 	</table>
 
 	{#if data.pagination.total > data.pagination.pageSize}
+		{@const totalPages = Math.ceil(data.pagination.total / data.pagination.pageSize)}
 		<footer class="flex items-center justify-between text-sm text-gray-600">
-			<span>
-				Page {data.pagination.page} of
-				{Math.ceil(data.pagination.total / data.pagination.pageSize)}
-			</span>
+			<span>Page {data.pagination.page} of {totalPages}</span>
 			<div class="space-x-2">
 				<a
 					class="rounded border px-3 py-1"
 					aria-disabled={data.pagination.page <= 1}
-					href={data.pagination.page <= 1
-						? '#'
-						: `/admin/articles?${new URLSearchParams({
-								...(searchTerm.trim() ? { q: searchTerm.trim() } : {}),
-								...(statusFilter !== 'all' ? { status: statusFilter } : {}),
-								page: String(data.pagination.page - 1)
-							})}`}
+					href={data.pagination.page <= 1 ? '#' : buildArticlesHref(data.pagination.page - 1)}
 				>
 					Previous
 				</a>
 				<a
 					class="rounded border px-3 py-1"
-					aria-disabled={data.pagination.page >=
-						Math.ceil(data.pagination.total / data.pagination.pageSize)}
-					href={data.pagination.page >= Math.ceil(data.pagination.total / data.pagination.pageSize)
-						? '#'
-						: `/admin/articles?${new URLSearchParams({
-								...(searchTerm.trim() ? { q: searchTerm.trim() } : {}),
-								...(statusFilter !== 'all' ? { status: statusFilter } : {}),
-								page: String(data.pagination.page + 1)
-							})}`}
+					aria-disabled={data.pagination.page >= totalPages}
+					href={data.pagination.page >= totalPages ? '#' : buildArticlesHref(data.pagination.page + 1)}
 				>
 					Next
 				</a>

@@ -6,9 +6,10 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
 	const code = url.searchParams.get('code');
 	const type = (url.searchParams.get('type') ?? 'email') as EmailOtpType;
 	const requestedNext = url.searchParams.get('next');
-	const next = requestedNext?.startsWith('/') && !requestedNext.startsWith('//')
-		? requestedNext
-		: '/dashboard';
+	const next =
+		requestedNext?.startsWith('/') && !requestedNext.startsWith('//')
+			? requestedNext
+			: '/dashboard';
 
 	let authError = null;
 

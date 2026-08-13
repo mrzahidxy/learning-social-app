@@ -22,7 +22,7 @@
 				id="article-search"
 				type="search"
 				placeholder="Search articles..."
-				class="w-full rounded-full border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm text-slate-700 shadow-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+				class="w-full rounded-full border border-slate-200 bg-white py-2 pr-4 pl-9 text-sm text-slate-700 shadow-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none"
 				bind:value={searchTerm}
 				aria-label="Search articles"
 				oninput={resetPage}

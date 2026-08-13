@@ -1,26 +1,15 @@
 <script lang="ts">
 	let { class: extraClass = '' } = $props();
-
-	const baseClasses = 'animate-spin-slow w-4 h-4';
-	const spinnerClasses = $derived(`${baseClasses} ${extraClass || 'text-white'}`.trim());
 </script>
 
-<!-- Loading spinner component for form submission states -->
 <svg
-	class={spinnerClasses}
+	class={`h-4 w-4 animate-spin-slow ${extraClass || 'text-white'}`.trim()}
 	fill="none"
 	viewBox="0 0 24 24"
 	role="img"
 	aria-label="Loading"
 >
-	<circle
-		class="opacity-25"
-		cx="12"
-		cy="12"
-		r="10"
-		stroke="currentColor"
-		stroke-width="4"
-	/>
+	<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
 	<path
 		class="opacity-75"
 		fill="currentColor"

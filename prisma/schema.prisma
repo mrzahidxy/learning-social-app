@@ -20,14 +20,15 @@ enum Role {
 }
 
 model Profile {
-  userId       String    @id @db.Uuid
-  role         Role      @default(READER)
-  displayName  String?
-  bio          String?
-  profileImage String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  articles     Article[]
+  userId           String    @id @db.Uuid
+  role             Role      @default(READER)
+  displayName      String?
+  bio              String?
+  profileImage     String?
+  profileImagePath String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  articles         Article[]
 
   @@index([userId])
   @@schema("public")
@@ -40,6 +41,7 @@ model Article {
   title        String
   content      String
   imageUrl     String?
+  imagePath    String?
   published    Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

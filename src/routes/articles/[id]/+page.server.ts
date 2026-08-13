@@ -1,8 +1,9 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import prisma from '$lib/server/prisma';
+import { renderMarkdownToSafeHtml, stripMarkdownForExcerpt } from '$lib/server/articles/markdown';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params }) => {
 	const { id } = params;
 
 	const article = await prisma.article.findFirst({
@@ -86,7 +87,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	]);
 
 	return {
-		article,
+		article: {
+			...article,
+			contentHtml: renderMarkdownToSafeHtml(article.content),
+			excerpt: stripMarkdownForExcerpt(article.content)
+		},
 		author: article.author,
 		relatedArticles,
 		authorStats: { totalArticles, totalSubscribers }

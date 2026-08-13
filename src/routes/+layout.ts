@@ -3,28 +3,28 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 import type { LayoutLoad } from './$types';
 
 export const load: LayoutLoad = async ({ data, depends, fetch }) => {
-  depends('supabase:auth');
+	depends('supabase:auth');
 
-  const supabase = isBrowser()
-    ? createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, { global: { fetch } })
-    : createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-        global: { fetch },
-        cookies: { getAll: () => data.cookies ?? [] }
-      });
+	const supabase = isBrowser()
+		? createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, { global: { fetch } })
+		: createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+				global: { fetch },
+				cookies: { getAll: () => data.cookies ?? [] }
+			});
 
-  let session = data.session ?? null;
-  let user = data.user ?? null;
-  let profile = data.profile ?? null;
+	let session = data.session ?? null;
+	let user = data.user ?? null;
+	const profile = data.profile ?? null;
 
-  if (isBrowser()) {
-    const [{ data: sessionData, error: sessionError }, { data: userData, error: userError }] =
-      await Promise.all([supabase.auth.getSession(), supabase.auth.getUser()]);
+	if (isBrowser()) {
+		const [{ data: sessionData, error: sessionError }, { data: userData, error: userError }] =
+			await Promise.all([supabase.auth.getSession(), supabase.auth.getUser()]);
 
-    user = !userError ? userData.user ?? null : null;
+		user = !userError ? (userData.user ?? null) : null;
 
-    const browserSession = sessionData.session;
-    session = !sessionError && browserSession && user ? { ...browserSession, user } : null;
-  }
+		const browserSession = sessionData.session;
+		session = !sessionError && browserSession && user ? { ...browserSession, user } : null;
+	}
 
-  return { supabase, session, user, profile };
+	return { supabase, session, user, profile };
 };
