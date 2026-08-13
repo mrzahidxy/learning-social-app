@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable svelte/prefer-writable-derived */
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -6,54 +7,71 @@
 	import SupabaseImageUpload from '$lib/features/user/components/SupabaseImageUpload.svelte';
 	import type { SvelteComponent } from 'svelte';
 
-	const props = $props();
-	const data = $derived(props.data);
+	type ProfileFormData = {
+		displayName?: string | null;
+		bio?: string | null;
+		role?: string;
+		profileImage?: string | null;
+	};
+
+	type UploaderInstance = SvelteComponent & { clearSelection?: () => void };
+
+	let { data } = $props();
 
 	let displayName = $state('');
 	let bio = $state('');
 	let profileImageUrl = $state('');
+	let savedProfileImageUrl = $state('');
+	let clearProfileImage = $state(false);
 	let desiredRole = $state<'AUTHOR' | 'READER'>('AUTHOR');
 	let statusMessage = $state('Update your profile and request author access.');
 	let statusType = $state<'idle' | 'sending' | 'success' | 'error'>('idle');
 	let isSubmitting = $state(false);
-	let mode = $state<'view' | 'edit'>('view');
 
-	let uploader = $state<(SvelteComponent & { clearSelection?: () => void }) | null>(null);
+	const mode = $derived(($page.url.searchParams.get('mode') as 'view' | 'edit') || 'view');
+
+	let uploader = $state<UploaderInstance | null>(null);
 
 	const canSubmit = $derived(displayName.trim().length > 0 && !isSubmitting);
+	const submitLabel = $derived(statusType === 'sending' ? 'Requesting…' : 'Request author role');
 
-	const handleUploadComplete = (detail: { url: string }) => {
-		profileImageUrl = detail.url;
-		statusMessage = 'Profile image uploaded';
+	const applyProfile = (profile: ProfileFormData | null | undefined) => {
+		displayName = profile?.displayName ?? '';
+		bio = profile?.bio ?? '';
+		savedProfileImageUrl = profile?.profileImage ?? '';
+		profileImageUrl = savedProfileImageUrl;
+		clearProfileImage = false;
+		desiredRole = profile?.role === 'AUTHOR' ? 'AUTHOR' : 'READER';
+	};
+
+	const handleImageSelected = (detail: { previewUrl: string }) => {
+		profileImageUrl = detail.previewUrl;
+		clearProfileImage = false;
+		statusMessage = 'Profile image selected';
 		statusType = 'idle';
 	};
 
 	const handleCleared = () => {
+		clearProfileImage = Boolean(savedProfileImageUrl);
 		profileImageUrl = '';
-		statusMessage = 'Profile image cleared';
+		statusMessage = clearProfileImage
+			? 'Profile image will be removed on save'
+			: 'Profile image cleared';
 		statusType = 'idle';
 	};
 
 	$effect(() => {
-		mode = ($page.url.searchParams.get('mode') as 'view' | 'edit') || 'view';
+		applyProfile(data?.profile);
 	});
 
-	$effect(() => {
-		const profile = data?.profile;
-		if (profile) {
-			displayName = profile.displayName ?? '';
-			bio = profile.bio ?? '';
-			profileImageUrl = profile.profileImage ?? '';
-			desiredRole = (profile.role as typeof desiredRole) ?? 'READER';
-		}
-	});
+	type UpdateProfileSuccess = {
+		profile?: ProfileFormData;
+	};
+	type UpdateProfileFailure = { formError?: string; field?: string };
 
-type UpdateProfileSuccess = {
-	profile?: { displayName?: string | null; bio?: string | null; role?: string; profileImage?: string | null };
-};
-type UpdateProfileFailure = { formError?: string; field?: string };
-
-	const handleFormSubmit: SubmitFunction<UpdateProfileSuccess, UpdateProfileFailure> = ({ cancel }) => {
+	const handleFormSubmit: SubmitFunction<UpdateProfileSuccess, UpdateProfileFailure> = ({
+		cancel
+	}) => {
 		if (!displayName.trim()) {
 			statusType = 'error';
 			statusMessage = 'Display name is required.';
@@ -77,20 +95,11 @@ type UpdateProfileFailure = { formError?: string; field?: string };
 				statusType = 'success';
 				statusMessage = 'Profile saved. We will review your request.';
 
-				if (result.data?.profile) {
-					displayName = result.data.profile.displayName ?? displayName;
-					bio = result.data.profile.bio ?? bio;
-					desiredRole = (result.data.profile.role as typeof desiredRole) ?? desiredRole;
-					profileImageUrl = result.data.profile.profileImage ?? profileImageUrl;
-				}
-
 				uploader?.clearSelection?.();
+				applyProfile(result.data?.profile);
 			} else if (result.type === 'failure') {
 				statusType = 'error';
 				statusMessage = result.data?.formError ?? 'Unable to save profile right now.';
-				if (result.data?.field === 'displayName') {
-					// focus could be added if desired
-				}
 			} else if (result.type === 'error') {
 				statusType = 'error';
 				statusMessage = result.error.message ?? 'Unable to save profile right now.';
@@ -106,9 +115,8 @@ type UpdateProfileFailure = { formError?: string; field?: string };
 </svelte:head>
 
 <section class="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-
 	<header class="space-y-2">
-		<p class="text-xs font-semibold uppercase tracking-wide text-blue-600">Author workspace</p>
+		<p class="text-xs font-semibold tracking-wide text-blue-600 uppercase">Author workspace</p>
 		<h1 class="text-3xl font-bold text-gray-900">My profile</h1>
 		<p class="text-sm text-gray-600">Share a short bio and request author permissions.</p>
 	</header>
@@ -118,11 +126,15 @@ type UpdateProfileFailure = { formError?: string; field?: string };
 			<form
 				class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
 				method="POST"
+				enctype="multipart/form-data"
 				use:enhance={handleFormSubmit}
 			>
 				<div class="space-y-6">
 					<div>
-						<label class="text-xs font-semibold uppercase tracking-wide text-gray-500" for="displayName">
+						<label
+							class="text-xs font-semibold tracking-wide text-gray-500 uppercase"
+							for="displayName"
+						>
 							Display name
 						</label>
 						<input
@@ -136,7 +148,7 @@ type UpdateProfileFailure = { formError?: string; field?: string };
 					</div>
 
 					<div>
-						<label class="text-xs font-semibold uppercase tracking-wide text-gray-500" for="bio">
+						<label class="text-xs font-semibold tracking-wide text-gray-500 uppercase" for="bio">
 							Bio (optional)
 						</label>
 						<textarea
@@ -150,8 +162,12 @@ type UpdateProfileFailure = { formError?: string; field?: string };
 					</div>
 
 					<div>
-						<p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Requested role</p>
-						<div class="mt-2 inline-flex overflow-hidden rounded-full border border-gray-300 bg-gray-50">
+						<p class="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+							Requested role
+						</p>
+						<div
+							class="mt-2 inline-flex overflow-hidden rounded-full border border-gray-300 bg-gray-50"
+						>
 							<button
 								type="button"
 								class={`px-4 py-2 text-sm font-semibold transition ${
@@ -181,15 +197,17 @@ type UpdateProfileFailure = { formError?: string; field?: string };
 					</div>
 
 					<div class="space-y-2">
-						<p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Profile image</p>
+						<p class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Profile image</p>
 						<SupabaseImageUpload
 							bind:this={uploader}
+							name="profileImage"
 							bind:url={profileImageUrl}
-							autoUpload={true}
-							onuploadcomplete={handleUploadComplete}
+							allowedTypes={['image/jpeg', 'image/png', 'image/webp']}
+							maxSize={2 * 1024 * 1024}
+							onselected={handleImageSelected}
 							oncleared={handleCleared}
 						/>
-						<input type="hidden" name="profileImageUrl" bind:value={profileImageUrl} />
+						<input type="hidden" name="clearProfileImage" value={clearProfileImage ? '1' : '0'} />
 					</div>
 				</div>
 
@@ -212,14 +230,16 @@ type UpdateProfileFailure = { formError?: string; field?: string };
 						class="inline-flex cursor-pointer items-center rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
 						disabled={!canSubmit}
 					>
-						{statusType === 'sending' ? 'Requesting…' : 'Request author role'}
+						{submitLabel}
 					</button>
 				</div>
 			</form>
 
 			<aside class="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
 				<div class="flex items-center gap-4">
-					<div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-100">
+					<div
+						class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-100"
+					>
 						{#if profileImageUrl}
 							<img src={profileImageUrl} alt="Profile preview" class="h-full w-full object-cover" />
 						{:else}
@@ -232,7 +252,9 @@ type UpdateProfileFailure = { formError?: string; field?: string };
 							Requested role:
 							<span
 								class={`ml-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-									desiredRole === 'AUTHOR' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'
+									desiredRole === 'AUTHOR'
+										? 'bg-blue-100 text-blue-700'
+										: 'bg-gray-200 text-gray-700'
 								}`}
 							>
 								{desiredRole === 'AUTHOR' ? 'Author' : 'Reader'}
@@ -241,17 +263,19 @@ type UpdateProfileFailure = { formError?: string; field?: string };
 					</div>
 				</div>
 				<div class="space-y-2">
-					<p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Bio preview</p>
-					<p class="text-sm text-gray-700 whitespace-pre-wrap">
+					<p class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Bio preview</p>
+					<p class="text-sm whitespace-pre-wrap text-gray-700">
 						{bio || 'Write a short bio to introduce yourself.'}
 					</p>
 				</div>
 			</aside>
 		</div>
 	{:else}
-		<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+		<div class="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
 			<div class="flex items-center gap-4">
-				<div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-100">
+				<div
+					class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-100"
+				>
 					{#if profileImageUrl}
 						<img src={profileImageUrl} alt="Profile" class="h-full w-full object-cover" />
 					{:else}
@@ -273,8 +297,8 @@ type UpdateProfileFailure = { formError?: string; field?: string };
 				</div>
 			</div>
 			<div class="mt-4 space-y-2">
-				<p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Bio</p>
-				<p class="text-sm text-gray-700 whitespace-pre-wrap">
+				<p class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Bio</p>
+				<p class="text-sm whitespace-pre-wrap text-gray-700">
 					{bio || 'Write a short bio to introduce yourself.'}
 				</p>
 			</div>

@@ -5,28 +5,43 @@
 	import type { SvelteComponent } from 'svelte';
 
 	type CreateArticleSuccess = { article?: { published?: boolean } };
-	type CreateArticleFailure = { message?: string; formError?: string; field?: 'title' | 'content' };
-	type UploadCompleteDetail = { url: string; filePath: string; bucket: string };
+	type CreateArticleFailure = { formError?: string; field?: 'title' | 'content' };
 	type SupabaseImageUploadInstance = SvelteComponent & { clearSelection?: () => void };
+	type ArticleForm = {
+		title: string;
+		content: string;
+		imageUrl: string;
+		published: boolean;
+	};
+	type ArticleFormErrors = {
+		title: string;
+		content: string;
+	};
 
 	let uploader: SupabaseImageUploadInstance | null = null;
 
-	let formData = $state({
+	const emptyForm = (): ArticleForm => ({
 		title: '',
 		content: '',
 		imageUrl: '',
 		published: false
 	});
-
-	let errors = $state({
+	const emptyErrors = (): ArticleFormErrors => ({
 		title: '',
-		content: '',
-		imageUrl: ''
+		content: ''
 	});
 
+	let formData = $state(emptyForm());
+	let errors = $state(emptyErrors());
+
 	let statusMessage = $state('Start typing and decide whether to keep this as a draft.');
-	let statusMessageType = $state<'info' | 'error'>('info');
 	let isSaving = $state(false);
+
+	const resetForm = () => {
+		formData = emptyForm();
+		errors = emptyErrors();
+		uploader?.clearSelection?.();
+	};
 
 	const handleFormSubmit: SubmitFunction<CreateArticleSuccess, CreateArticleFailure> = ({
 		cancel
@@ -38,13 +53,11 @@
 		const isValid = validateForm();
 		if (!isValid) {
 			statusMessage = 'Please fix the errors below before submitting.';
-			statusMessageType = 'error';
 			cancel();
 			return;
 		}
 
 		statusMessage = 'Saving article…';
-		statusMessageType = 'info';
 		isSaving = true;
 
 		return async ({ result, update }) => {
@@ -56,37 +69,19 @@
 				statusMessage = article?.published
 					? 'Article published successfully; it will appear in your feed shortly.'
 					: 'Draft saved; you can publish it once you are ready.';
-				statusMessageType = 'info';
 
 				if (article) {
-					// Delay reset to allow user to see success message
-					setTimeout(() => {
-						formData = {
-							title: '',
-							content: '',
-							imageUrl: '',
-							published: false
-						};
-
-						errors = {
-							title: '',
-							content: '',
-							imageUrl: ''
-						};
-						uploader?.clearSelection?.();
-					}, 2000);
+					setTimeout(resetForm, 2000);
 				}
 			} else if (result.type === 'failure') {
-				const formError = result.data?.formError ?? result.data?.message;
+				const formError = result.data?.formError;
 				const field = result.data?.field;
 				statusMessage = formError ?? 'Unable to save the article right now.';
-				statusMessageType = 'error';
 				if (field && formError) {
 					errors = { ...errors, [field]: formError };
 				}
 			} else if (result.type === 'error') {
 				statusMessage = result.error.message ?? 'Unable to save the article right now.';
-				statusMessageType = 'error';
 			}
 
 			await update?.({ reset: false, invalidateAll: false });
@@ -96,12 +91,7 @@
 	const validateForm = () => {
 		let isValid = true;
 
-		// Reset errors
-		errors = {
-			title: '',
-			content: '',
-			imageUrl: ''
-		};
+		errors = emptyErrors();
 
 		// Validate title
 		if (!formData.title.trim()) {
@@ -134,14 +124,14 @@
 		statusMessage = value ? 'Ready to publish once you save.' : 'Draft saved locally.';
 	};
 
-	function handleUploadComplete(detail: UploadCompleteDetail) {
-		formData.imageUrl = detail.url;
-		statusMessage = 'Image ready for the article; save to persist.';
+	function handleImageSelected(detail: { previewUrl: string }) {
+		formData.imageUrl = detail.previewUrl;
+		statusMessage = 'Image selected; save to upload it.';
 	}
 
 	function handleCleared() {
 		formData.imageUrl = '';
-		statusMessage = 'Upload cleared; pick a new image when ready.';
+		statusMessage = 'Image cleared; pick a new image when ready.';
 	}
 </script>
 
@@ -162,6 +152,7 @@
 			<form
 				class="space-y-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
 				method="POST"
+				enctype="multipart/form-data"
 				use:enhance={handleFormSubmit}
 			>
 				<div>
@@ -200,13 +191,13 @@
 
 				<SupabaseImageUpload
 					bind:this={uploader}
-					bucket="uploads"
-					autoUpload={false}
+					name="articleImage"
 					bind:url={formData.imageUrl}
-					onuploadcomplete={handleUploadComplete}
+					allowedTypes={['image/jpeg', 'image/png', 'image/webp']}
+					maxSize={5 * 1024 * 1024}
+					onselected={handleImageSelected}
 					oncleared={handleCleared}
 				/>
-				<input type="hidden" name="imageUrl" bind:value={formData.imageUrl} />
 				<input type="hidden" name="published" value={formData.published ? '1' : '0'} />
 
 				<div
