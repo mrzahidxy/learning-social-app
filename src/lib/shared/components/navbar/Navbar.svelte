@@ -37,6 +37,16 @@
 		profile?.displayName || user?.user_metadata?.full_name || user?.email || 'Profile'
 	);
 	const displayRole = $derived(profile?.role ?? null);
+	const workspaceHref = $derived(
+		displayRole === 'ADMIN'
+			? '/admin/articles'
+			: displayRole === 'AUTHOR'
+				? '/user/articles'
+				: '/user/notifications'
+	);
+	const workspaceLabel = $derived(
+		displayRole === 'ADMIN' ? 'Admin' : displayRole === 'AUTHOR' ? 'Author' : 'Reader'
+	);
 	const preferredProfileImage = $derived(
 		profile?.profileImage || user?.user_metadata?.avatar_url || FALLBACK_PROFILE_IMAGE
 	);
@@ -183,6 +193,12 @@
 
 			{#if user}
 				<div class="flex items-center gap-3">
+					<a
+						href={workspaceHref}
+						class="hidden rounded-full border border-blue-600 px-3 py-1.5 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 sm:inline-flex"
+					>
+						{workspaceLabel} panel
+					</a>
 					<div class="relative" bind:this={notificationsContainer}>
 						<NotificationBell
 							isOpen={isNotificationsOpen}
@@ -250,6 +266,37 @@
 											{displayRole}
 										</span>
 									{/if}
+								</a>
+								{#if displayRole === 'ADMIN'}
+									<a
+										href="/admin/articles"
+										class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+										role="menuitem"
+									>
+										Admin articles
+									</a>
+									<a
+										href="/admin/users"
+										class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+										role="menuitem"
+									>
+										Admin users
+									</a>
+								{:else if displayRole === 'AUTHOR'}
+									<a
+										href="/user/articles"
+										class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+										role="menuitem"
+									>
+										My articles
+									</a>
+								{/if}
+								<a
+									href="/user/notifications"
+									class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+									role="menuitem"
+								>
+									Notifications
 								</a>
 								<form method="POST" action="/signout" class="contents" bind:this={signOutForm}>
 									<button
