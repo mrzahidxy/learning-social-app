@@ -45,6 +45,12 @@
 		profileImageSrc = preferredProfileImage;
 	});
 
+	$effect(() => {
+		if (user) {
+			void notificationStore.loadInitial(DEFAULT_NOTIFICATION_LIMIT);
+		}
+	});
+
 	function handleProfileImageError() {
 		profileImageSrc = FALLBACK_PROFILE_IMAGE;
 	}
@@ -63,7 +69,7 @@
 		isNotificationsOpen = !isNotificationsOpen;
 
 		if (isNotificationsOpen) {
-			await notificationStore.loadInitial({ limit: DEFAULT_NOTIFICATION_LIMIT });
+			await notificationStore.loadInitial(DEFAULT_NOTIFICATION_LIMIT, true);
 		}
 	}
 
@@ -72,9 +78,9 @@
 	}
 
 	async function openNotification(notification: NotificationSummary) {
-		pendingNotificationIds.add(notification.id);
+		pendingNotificationIds = new Set(pendingNotificationIds).add(notification.id);
 		const success = await notificationStore.markOneAsRead(notification.id);
-		pendingNotificationIds.delete(notification.id);
+		pendingNotificationIds = new Set([...pendingNotificationIds].filter((id) => id !== notification.id));
 
 		if (success) {
 			closeNotifications();
@@ -83,9 +89,9 @@
 	}
 
 	async function markNotificationReadOnly(notification: NotificationSummary) {
-		pendingNotificationIds.add(notification.id);
+		pendingNotificationIds = new Set(pendingNotificationIds).add(notification.id);
 		await notificationStore.markOneAsRead(notification.id);
-		pendingNotificationIds.delete(notification.id);
+		pendingNotificationIds = new Set([...pendingNotificationIds].filter((id) => id !== notification.id));
 	}
 
 	async function handleMarkAllNotificationsRead() {
@@ -191,8 +197,7 @@
 								error={notificationStore.error}
 								notifications={notificationStore.notifications.slice(0, 8)}
 								unreadCount={notificationStore.unreadCount}
-								onRetry={() =>
-									notificationStore.loadInitial({ limit: DEFAULT_NOTIFICATION_LIMIT }, true)}
+								onRetry={() => notificationStore.loadInitial(DEFAULT_NOTIFICATION_LIMIT, true)}
 								onMarkAllRead={handleMarkAllNotificationsRead}
 								onOpenNotification={openNotification}
 								onMarkRead={markNotificationReadOnly}
